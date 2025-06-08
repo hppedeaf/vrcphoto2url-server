@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Custom Server File Manager - Admin Dashboard</title>
+    <link rel="stylesheet" href="/static/css/admin.css">
+    <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-content">
+                <div class="title-section">
+                    <h1 class="app-title">🏠 Custom Server File Manager</h1>
+                    <p class="app-subtitle">Admin Dashboard • File Management • Server Statistics</p>
+                </div>
+                <div class="status-section">
+                    <div class="status-indicators">
+                        <div class="status-item">
+                            <span class="status-icon">✅</span>
+                            <span class="status-text">Server Online</span>
+                        </div>
+                        <div class="status-item">
+                            <span class="status-icon">📁</span>
+                            <span class="status-text" id="file-count">Loading...</span>
+                        </div>
+                    </div>                    <div class="header-buttons">
+                        <button class="header-btn" onclick="refreshData()">🔄 Refresh</button>
+                        <button class="header-btn" onclick="openSettings()">⚙️ Settings</button>
+                        <button class="header-btn" onclick="logout()">🚪 Logout</button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Statistics Cards -->
+            <section class="stats-section">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">📊</div>
+                        <div class="stat-content">
+                            <h3 class="stat-title">Total Files</h3>
+                            <p class="stat-value" id="total-files">0</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">💾</div>
+                        <div class="stat-content">
+                            <h3 class="stat-title">Storage Used</h3>
+                            <p class="stat-value" id="storage-used">0 MB</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">📈</div>
+                        <div class="stat-content">
+                            <h3 class="stat-title">Uploads Today</h3>
+                            <p class="stat-value" id="uploads-today">0</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">🔗</div>
+                        <div class="stat-content">
+                            <h3 class="stat-title">Server Uptime</h3>
+                            <p class="stat-value" id="server-uptime">00:00:00</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Main Panel -->
+            <section class="main-panel">
+                <div class="panel-container">
+                    <!-- Tab Navigation -->
+                    <div class="tab-navigation">
+                        <button class="tab-btn active" onclick="switchTab('files')">📁 File Management</button>
+                        <button class="tab-btn" onclick="switchTab('activity')">📋 Activity Log</button>
+                        <button class="tab-btn" onclick="switchTab('analytics')">📊 Analytics</button>
+                    </div>
+
+                    <!-- Tab Content -->
+                    <div class="tab-content">
+                        <!-- Files Tab -->
+                        <div id="files-tab" class="tab-panel active">
+                            <div class="panel-header">
+                                <h2>File Management</h2>
+                                <div class="panel-actions">
+                                    <button class="action-btn" onclick="uploadFile()">📤 Upload File</button>
+                                    <button class="action-btn danger" onclick="cleanupOldFiles()">🗑️ Cleanup</button>
+                                </div>
+                            </div>
+                            <div class="file-list-container">
+                                <div class="file-list-header">
+                                    <div class="file-header-item">Name</div>
+                                    <div class="file-header-item">Size</div>
+                                    <div class="file-header-item">Upload Date</div>
+                                    <div class="file-header-item">Actions</div>
+                                </div>
+                                <div class="file-list" id="file-list">
+                                    <!-- Files will be loaded here -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Activity Tab -->
+                        <div id="activity-tab" class="tab-panel">
+                            <div class="panel-header">
+                                <h2>Activity Log</h2>
+                                <div class="panel-actions">
+                                    <button class="action-btn" onclick="clearLog()">🗑️ Clear Log</button>
+                                </div>
+                            </div>
+                            <div class="activity-log" id="activity-log">
+                                <!-- Activity entries will be loaded here -->
+                            </div>
+                        </div>
+
+                        <!-- Analytics Tab -->
+                        <div id="analytics-tab" class="tab-panel">
+                            <div class="panel-header">
+                                <h2>Server Analytics</h2>
+                            </div>
+                            <div class="analytics-container">
+                                <div class="analytics-chart">
+                                    <h3>Upload Statistics</h3>
+                                    <div class="chart-placeholder">
+                                        <p>📊 Chart data will be displayed here</p>
+                                    </div>
+                                </div>
+                                <div class="analytics-info">
+                                    <h3>System Information</h3>
+                                    <div class="info-grid" id="system-info">
+                                        <!-- System info will be loaded here -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Progress Bar -->
+        <div class="progress-container" id="progress-container" style="display: none;">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progress-fill"></div>
+            </div>
+            <div class="progress-text" id="progress-text">Loading...</div>
+        </div>
+
+        <!-- Settings Modal -->
+        <div class="modal" id="settings-modal" style="display: none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Admin Settings</h2>
+                    <button class="modal-close" onclick="closeSettings()">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="settings-section">
+                        <h3>Theme Settings</h3>
+                        <div class="color-picker-group">
+                            <div class="color-picker">
+                                <label>Primary Color:</label>
+                                <input type="color" id="primary-color" value="#4CAF50">
+                            </div>
+                            <div class="color-picker">
+                                <label>Accent Color:</label>
+                                <input type="color" id="accent-color" value="#2E7D32">
+                            </div>
+                        </div>
+                        <div class="preset-colors">
+                            <button class="preset-btn" onclick="applyPreset('green')">Green</button>
+                            <button class="preset-btn" onclick="applyPreset('blue')">Blue</button>
+                            <button class="preset-btn" onclick="applyPreset('purple')">Purple</button>
+                            <button class="preset-btn" onclick="applyPreset('orange')">Orange</button>
+                        </div>
+                    </div>
+                    <div class="settings-section">
+                        <h3>Server Settings</h3>
+                        <div class="setting-item">
+                            <label>Auto-cleanup enabled:</label>
+                            <input type="checkbox" id="auto-cleanup" checked>
+                        </div>
+                        <div class="setting-item">
+                            <label>Max file size (MB):</label>
+                            <input type="number" id="max-file-size" value="10" min="1" max="100">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="action-btn" onclick="saveSettings()">Save Settings</button>
+                    <button class="action-btn secondary" onclick="closeSettings()">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/admin.js"></script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+Secret
+.venv
+
+__pycache__
+.env
+
+multi-file-manager
+
+uploads
+backup
+backup_before_improvement
