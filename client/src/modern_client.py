@@ -59,14 +59,8 @@ class FileMonitorHandler(FileSystemEventHandler):
             
             # Check if it's an allowed file type
             if any(filename.lower().endswith(ext) for ext in self.allowed_extensions):
-                # Use smart delay for large files (especially VRChat screenshots)
-                # VRChat screenshots are typically 3840x2160 and can be 5-10MB
-                # Need more time for large files to be fully written
                 delay = 5.0 if any(filename.lower().endswith(ext) for ext in self.photo_extensions) else 2.0
-                
-                # Track this file to avoid duplicate uploads
                 self.pending_uploads[filepath] = time.time()
-                
                 threading.Timer(delay, lambda: self._process_file(filepath)).start()
     
     def on_moved(self, event):
@@ -76,34 +70,23 @@ class FileMonitorHandler(FileSystemEventHandler):
             dest_path = event.dest_path
             filename = os.path.basename(dest_path)
             
-            # Check if destination is an allowed file type
             if any(filename.lower().endswith(ext) for ext in self.allowed_extensions):
-                # Remove old path from pending uploads if it exists
                 if src_path in self.pending_uploads:
                     del self.pending_uploads[src_path]
                 
-                # Use shorter delay for moved files since they should already be complete
                 delay = 2.0 if any(filename.lower().endswith(ext) for ext in self.photo_extensions) else 1.0
-                
-                # Track the new path
                 self.pending_uploads[dest_path] = time.time()
-                
                 threading.Timer(delay, lambda: self._process_file(dest_path)).start()
     
     def _process_file(self, filepath):
         """Process file for upload with duplicate checking"""
         try:
-            # Check if this file is still pending (not already processed)
             if filepath in self.pending_uploads:
                 del self.pending_uploads[filepath]
-                
-                # Double-check file still exists
                 if os.path.exists(filepath):
                     self.callback(filepath)
-                    
         except Exception as e:
             print(f"Error processing file {filepath}: {e}")
-            # Clean up pending uploads entry
             if filepath in self.pending_uploads:
                 del self.pending_uploads[filepath]
 
@@ -140,12 +123,10 @@ class UploadWorker(QThread):
                 
                 self.upload_progress.emit(f"Preparing {filename}", 10)
                 
-                # Wait for file to be ready
                 if not self._wait_for_file_ready(filepath, filename):
                     continue
                 
                 self.upload_progress.emit(f"Uploading {filename}", 50)
-                  # Upload file
                 file_size = os.path.getsize(filepath)
                 result = self.server_manager.upload_file(filepath)
                 
@@ -164,10 +145,10 @@ class UploadWorker(QThread):
     
     def _wait_for_file_ready(self, filepath: str, filename: str) -> bool:
         """Wait for file to be ready for upload with enhanced stability checking"""
-        max_retries = 15  # Increased retries for large VRChat screenshots
+        max_retries = 15
         last_size = 0
         stable_count = 0
-        required_stable_checks = 3  # File size must be stable for 3 consecutive checks
+        required_stable_checks = 3
         
         for retry in range(max_retries):
             try:
@@ -175,19 +156,14 @@ class UploadWorker(QThread):
                     self.upload_failed.emit(filename, "File not found")
                     return False
                 
-                # Get current file size
                 current_size = os.path.getsize(filepath)
                 
-                # Test file access
                 with open(filepath, 'rb') as test_file:
-                    # Try to read first byte
                     test_file.read(1)
-                    # For large files, also check if we can seek to end
-                    if current_size > 1024 * 1024:  # For files > 1MB
-                        test_file.seek(-1, 2)  # Seek to last byte
+                    if current_size > 1024 * 1024:
+                        test_file.seek(-1, 2)
                         test_file.read(1)
                 
-                # Check if file size is stable (not growing)
                 if current_size == last_size and current_size > 0:
                     stable_count += 1
                     if stable_count >= required_stable_checks:
@@ -196,11 +172,10 @@ class UploadWorker(QThread):
                     stable_count = 0
                     last_size = current_size
                 
-                # Dynamic wait time based on file size and retry count
-                if current_size > 5 * 1024 * 1024:  # > 5MB (like VRChat screenshots)
-                    wait_time = min(3 + retry * 0.5, 8)  # 3-8 seconds for large files
+                if current_size > 5 * 1024 * 1024:
+                    wait_time = min(3 + retry * 0.5, 8)
                 else:
-                    wait_time = min(1 + retry * 0.2, 3)  # 1-3 seconds for smaller files
+                    wait_time = min(1 + retry * 0.2, 3)
                 
                 if retry < max_retries - 1:
                     progress = 20 + retry * 4
@@ -216,7 +191,7 @@ class UploadWorker(QThread):
                 
             except PermissionError:
                 if retry < max_retries - 1:
-                    wait_time = min(2 + retry * 0.5, 5)  # Longer wait for permission issues
+                    wait_time = min(2 + retry * 0.5, 5)
                     self.upload_progress.emit(f"File {filename} is locked, waiting...", 20 + retry * 3)
                     time.sleep(wait_time)
                     continue
@@ -266,6 +241,9 @@ class ModernCustomClient(QMainWindow):
         
         # Welcome
         self.show_welcome_message()
+        
+        # Try auto-connection after everything is set up
+        QTimer.singleShot(1000, self.try_auto_connection)  # 1 second delay
         
     def setup_worker_connections(self):
         """Connect upload worker signals"""
@@ -888,7 +866,6 @@ class ModernCustomClient(QMainWindow):
     
     def get_setting(self, key, default=None):
         """Get setting value"""
-        # In a real app, this would load from a config file
         settings = getattr(self, '_settings', {})
         return settings.get(key, default)
     
@@ -897,19 +874,71 @@ class ModernCustomClient(QMainWindow):
         if not hasattr(self, '_settings'):
             self._settings = {}
         self._settings[key] = value
-        # In a real app, this would save to a config file
     
     def load_settings(self):
         """Load settings from file"""
         try:
+            # Load from user's home directory
             config_file = Path.home() / ".custom_server_client" / "config.json"
             if config_file.exists():
                 with open(config_file, 'r') as f:
                     self._settings = json.load(f)
             else:
                 self._settings = {}
-        except Exception:
+                    
+        except Exception as e:
             self._settings = {}
+            print(f"Warning: Error loading settings: {str(e)}")
+    
+    def auto_connect_from_config(self, config):
+        """Automatically connect using config settings"""
+        try:
+            server_url = config.get('server_url', '')
+            api_key = config.get('api_key', '')
+            
+            if server_url:
+                self.log_activity(f"🔌 Auto-connecting to {server_url}...")
+                
+                if self.server_manager.connect(server_url, api_key):
+                    self.connected = True
+                    self.connection_status.update_status("✅ Connected", "success")
+                    self.connect_btn.setText("🔌 Disconnect")
+                    self.connect_btn.setStyleType("danger")
+                    self.monitor_btn.setEnabled(True)
+                    self.add_folder_btn.setEnabled(True)
+                    
+                    self.log_activity("✅ Auto-connection successful!")
+                    self.statusBar().showMessage(f"Connected to {server_url}")
+                    
+                    # Save successful connection settings
+                    self.save_setting('server_url', server_url)
+                    self.save_setting('api_key', api_key)
+                    
+                else:
+                    self.log_activity("❌ Auto-connection failed - server unreachable")
+                    
+        except Exception as e:
+            self.log_activity(f"❌ Auto-connection error: {str(e)}")
+    
+    def try_auto_connection(self):
+        """Try to auto-connect from local config file if not already connected"""
+        if self.connected:
+            return
+            
+        try:
+            local_config_file = Path(__file__).parent.parent / "client_config.json"
+            if local_config_file.exists():
+                with open(local_config_file, 'r') as f:
+                    local_config = json.load(f)
+                
+                if (local_config.get('server_url') and 
+                    local_config.get('remember_connection', True)):
+                    
+                    self.log_activity(f"🔍 Found local config file: {local_config_file}")
+                    self.auto_connect_from_config(local_config)
+                    
+        except Exception as e:
+            self.log_activity(f"⚠️ Error in auto-connection: {str(e)}")
     
     def save_settings(self):
         """Save settings to file"""

@@ -1,1 +1,0 @@
-# This file marks the constants directory as a package.
