@@ -4,6 +4,6 @@
     "buildCommand": "pip install -r requirements.txt"
   },
   "deploy": {
-    "startCommand": "cd src && uvicorn app:app --host 0.0.0.0 --port $PORT --timeout-keep-alive 300"
+    "startCommand": "uvicorn src.app:app --host 0.0.0.0 --port $PORT --timeout-keep-alive 300"
   }
 }
