@@ -3,199 +3,352 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Custom Server File Manager - Admin Dashboard</title>
+    <title>VRCPhoto2URL - Admin Dashboard</title>
     <link rel="stylesheet" href="/static/css/admin.css">
-    <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 <body>
     <div class="app-container">
-        <!-- Header -->
-        <header class="app-header">
-            <div class="header-content">
-                <div class="title-section">
-                    <h1 class="app-title">🏠 Custom Server File Manager</h1>
-                    <p class="app-subtitle">Admin Dashboard • File Management • Server Statistics</p>
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <span>VRCPhoto2URL</span>
                 </div>
-                <div class="status-section">
-                    <div class="status-indicators">
-                        <div class="status-item">
-                            <span class="status-icon">✅</span>
-                            <span class="status-text">Server Online</span>
-                        </div>
-                        <div class="status-item">
-                            <span class="status-icon">📁</span>
-                            <span class="status-text" id="file-count">Loading...</span>
-                        </div>
-                    </div>                    <div class="header-buttons">
-                        <button class="header-btn" onclick="refreshData()">🔄 Refresh</button>
-                        <button class="header-btn" onclick="openSettings()">⚙️ Settings</button>
-                        <button class="header-btn" onclick="logout()">🚪 Logout</button>
-                    </div>
-                </div>
+                <button class="sidebar-toggle" id="sidebar-toggle">
+                    <i class="fas fa-bars"></i>
+                </button>
             </div>
-        </header>
+            
+            <nav class="sidebar-nav">
+                <ul>
+                    <li class="nav-item active" data-tab="overview">
+                        <i class="fas fa-tachometer-alt"></i>
+                        <span>Overview</span>
+                    </li>
+                    <li class="nav-item" data-tab="files">
+                        <i class="fas fa-folder"></i>
+                        <span>File Manager</span>
+                    </li>
+                    <li class="nav-item" data-tab="analytics">
+                        <i class="fas fa-chart-bar"></i>
+                        <span>Analytics</span>
+                    </li>
+                    <li class="nav-item" data-tab="activity">
+                        <i class="fas fa-history"></i>
+                        <span>Activity Log</span>
+                    </li>
+                    <li class="nav-item" data-tab="settings">
+                        <i class="fas fa-cog"></i>
+                        <span>Settings</span>
+                    </li>
+                </ul>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <div class="server-status">
+                    <div class="status-indicator online"></div>
+                    <span>Server Online</span>
+                </div>
+                <button class="logout-btn" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
+                </button>
+            </div>
+        </aside>
 
         <!-- Main Content -->
         <main class="main-content">
-            <!-- Statistics Cards -->
-            <section class="stats-section">
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-icon">📊</div>
-                        <div class="stat-content">
-                            <h3 class="stat-title">Total Files</h3>
-                            <p class="stat-value" id="total-files">0</p>
+            <!-- Header -->
+            <header class="main-header">
+                <div class="header-left">
+                    <h1 id="page-title">Overview</h1>
+                    <div class="breadcrumb">
+                        <span>Dashboard</span>
+                        <i class="fas fa-chevron-right"></i>
+                        <span id="breadcrumb-current">Overview</span>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <button class="refresh-btn" onclick="refreshData()">
+                        <i class="fas fa-sync-alt"></i>
+                        <span>Refresh</span>
+                    </button>
+                    <div class="user-info">
+                        <div class="user-avatar">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <span>Admin</span>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Content Area -->
+            <div class="content-area">
+                <!-- Overview Tab -->
+                <div class="tab-panel active" id="overview-tab">
+                    <!-- Stats Grid -->
+                    <div class="stats-grid">
+                        <div class="stat-card primary">
+                            <div class="stat-icon">
+                                <i class="fas fa-file-alt"></i>
+                            </div>
+                            <div class="stat-content">
+                                <div class="stat-value" id="total-files">0</div>
+                                <div class="stat-label">Total Files</div>
+                                <div class="stat-change positive" id="files-change">+0 this week</div>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-card secondary">
+                            <div class="stat-icon">
+                                <i class="fas fa-hdd"></i>
+                            </div>
+                            <div class="stat-content">
+                                <div class="stat-value" id="storage-used">0 MB</div>
+                                <div class="stat-label">Storage Used</div>
+                                <div class="stat-change" id="storage-change">of 5.0 GB</div>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-card success">
+                            <div class="stat-icon">
+                                <i class="fas fa-arrow-up"></i>
+                            </div>
+                            <div class="stat-content">
+                                <div class="stat-value" id="uploads-today">0</div>
+                                <div class="stat-label">Uploads Today</div>
+                                <div class="stat-change positive" id="uploads-change">+0 yesterday</div>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-card warning">
+                            <div class="stat-icon">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <div class="stat-content">
+                                <div class="stat-value" id="server-uptime">00:00:00</div>
+                                <div class="stat-label">Server Uptime</div>
+                                <div class="stat-change" id="uptime-change">Last restart</div>
+                            </div>
                         </div>
                     </div>
-                    <div class="stat-card">
-                        <div class="stat-icon">💾</div>
-                        <div class="stat-content">
-                            <h3 class="stat-title">Storage Used</h3>
-                            <p class="stat-value" id="storage-used">0 MB</p>
+
+                    <!-- Quick Actions -->
+                    <div class="quick-actions">
+                        <h3><i class="fas fa-bolt"></i> Quick Actions</h3>
+                        <div class="action-grid">
+                            <button class="action-card" onclick="uploadFile()">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                                <span>Upload Files</span>
+                            </button>
+                            <button class="action-card" onclick="switchTab('files')">
+                                <i class="fas fa-folder-open"></i>
+                                <span>Browse Files</span>
+                            </button>
+                            <button class="action-card" onclick="cleanupOldFiles()">
+                                <i class="fas fa-broom"></i>
+                                <span>Cleanup</span>
+                            </button>
+                            <button class="action-card" onclick="exportLogs()">
+                                <i class="fas fa-download"></i>
+                                <span>Export Logs</span>
+                            </button>
                         </div>
                     </div>
-                    <div class="stat-card">
-                        <div class="stat-icon">📈</div>
-                        <div class="stat-content">
-                            <h3 class="stat-title">Uploads Today</h3>
-                            <p class="stat-value" id="uploads-today">0</p>
-                        </div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon">🔗</div>
-                        <div class="stat-content">
-                            <h3 class="stat-title">Server Uptime</h3>
-                            <p class="stat-value" id="server-uptime">00:00:00</p>
+
+                    <!-- Recent Activity -->
+                    <div class="recent-activity">
+                        <h3><i class="fas fa-activity"></i> Recent Activity</h3>
+                        <div class="activity-preview" id="activity-preview">
+                            <!-- Recent activity items will be loaded here -->
                         </div>
                     </div>
                 </div>
-            </section>
 
-            <!-- Main Panel -->
-            <section class="main-panel">
-                <div class="panel-container">
-                    <!-- Tab Navigation -->
-                    <div class="tab-navigation">
-                        <button class="tab-btn active" onclick="switchTab('files')">📁 File Management</button>
-                        <button class="tab-btn" onclick="switchTab('activity')">📋 Activity Log</button>
-                        <button class="tab-btn" onclick="switchTab('analytics')">📊 Analytics</button>
+                <!-- Files Tab -->
+                <div class="tab-panel" id="files-tab">
+                    <div class="files-header">
+                        <div class="files-controls">
+                            <div class="view-controls">
+                                <button class="view-btn active" data-view="grid">
+                                    <i class="fas fa-th-large"></i>
+                                </button>
+                                <button class="view-btn" data-view="list">
+                                    <i class="fas fa-list"></i>
+                                </button>
+                            </div>
+                            <div class="search-box">
+                                <i class="fas fa-search"></i>
+                                <input type="text" placeholder="Search files..." id="file-search">
+                            </div>
+                            <div class="filter-dropdown">
+                                <select id="file-filter">
+                                    <option value="all">All Files</option>
+                                    <option value="images">Images</option>
+                                    <option value="videos">Videos</option>
+                                    <option value="documents">Documents</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+                            <button class="upload-btn" onclick="uploadFile()">
+                                <i class="fas fa-plus"></i>
+                                <span>Upload</span>
+                            </button>
+                        </div>
                     </div>
 
-                    <!-- Tab Content -->
-                    <div class="tab-content">
-                        <!-- Files Tab -->
-                        <div id="files-tab" class="tab-panel active">
-                            <div class="panel-header">
-                                <h2>File Management</h2>
-                                <div class="panel-actions">
-                                    <button class="action-btn" onclick="uploadFile()">📤 Upload File</button>
-                                    <button class="action-btn danger" onclick="cleanupOldFiles()">🗑️ Cleanup</button>
+                    <div class="files-container">
+                        <div class="files-grid" id="files-grid">
+                            <!-- Files will be loaded here -->
+                        </div>
+                        <div class="files-list" id="files-list" style="display: none;">
+                            <!-- List view will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Analytics Tab -->
+                <div class="tab-panel" id="analytics-tab">
+                    <div class="analytics-content">
+                        <div class="chart-section">
+                            <div class="chart-card">
+                                <h3><i class="fas fa-chart-line"></i> Upload Trends</h3>
+                                <div class="chart-placeholder">
+                                    <i class="fas fa-chart-bar"></i>
+                                    <p>Upload statistics chart will be displayed here</p>
                                 </div>
                             </div>
-                            <div class="file-list-container">
-                                <div class="file-list-header">
-                                    <div class="file-header-item">Name</div>
-                                    <div class="file-header-item">Size</div>
-                                    <div class="file-header-item">Upload Date</div>
-                                    <div class="file-header-item">Actions</div>
-                                </div>
-                                <div class="file-list" id="file-list">
-                                    <!-- Files will be loaded here -->
+                            <div class="chart-card">
+                                <h3><i class="fas fa-pie-chart"></i> File Types</h3>
+                                <div class="file-types-chart" id="file-types-chart">
+                                    <!-- File type breakdown will be loaded here -->
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Activity Tab -->
-                        <div id="activity-tab" class="tab-panel">
-                            <div class="panel-header">
-                                <h2>Activity Log</h2>
-                                <div class="panel-actions">
-                                    <button class="action-btn" onclick="clearLog()">🗑️ Clear Log</button>
-                                </div>
-                            </div>
-                            <div class="activity-log" id="activity-log">
-                                <!-- Activity entries will be loaded here -->
-                            </div>
-                        </div>
-
-                        <!-- Analytics Tab -->
-                        <div id="analytics-tab" class="tab-panel">
-                            <div class="panel-header">
-                                <h2>Server Analytics</h2>
-                            </div>
-                            <div class="analytics-container">
-                                <div class="analytics-chart">
-                                    <h3>Upload Statistics</h3>
-                                    <div class="chart-placeholder">
-                                        <p>📊 Chart data will be displayed here</p>
-                                    </div>
-                                </div>
-                                <div class="analytics-info">
-                                    <h3>System Information</h3>
-                                    <div class="info-grid" id="system-info">
-                                        <!-- System info will be loaded here -->
-                                    </div>
-                                </div>
+                        <div class="system-info">
+                            <h3><i class="fas fa-server"></i> System Information</h3>
+                            <div class="info-grid" id="system-info">
+                                <!-- System info will be loaded here -->
                             </div>
                         </div>
                     </div>
                 </div>
-            </section>
+
+                <!-- Activity Tab -->
+                <div class="tab-panel" id="activity-tab">
+                    <div class="activity-content">
+                        <div class="activity-header">
+                            <h3><i class="fas fa-history"></i> Activity Log</h3>
+                            <div class="activity-controls">
+                                <select id="activity-filter">
+                                    <option value="all">All Activities</option>
+                                    <option value="upload">Uploads</option>
+                                    <option value="delete">Deletions</option>
+                                    <option value="system">System</option>
+                                </select>
+                                <button class="clear-log-btn" onclick="clearLog()">
+                                    <i class="fas fa-trash"></i>
+                                    <span>Clear Log</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="activity-log" id="activity-log">
+                            <!-- Activity entries will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Settings Tab -->
+                <div class="tab-panel" id="settings-tab">
+                    <div class="settings-content">
+                        <div class="settings-section">
+                            <h3><i class="fas fa-palette"></i> Theme Settings</h3>
+                            <div class="theme-controls">
+                                <div class="color-picker-group">
+                                    <div class="color-picker">
+                                        <label>Primary Color:</label>
+                                        <input type="color" id="primary-color" value="#667eea">
+                                    </div>
+                                    <div class="color-picker">
+                                        <label>Accent Color:</label>
+                                        <input type="color" id="accent-color" value="#764ba2">
+                                    </div>
+                                </div>
+                                <div class="preset-themes">
+                                    <button class="preset-btn" onclick="applyPreset('blue')">Ocean Blue</button>
+                                    <button class="preset-btn" onclick="applyPreset('purple')">Purple</button>
+                                    <button class="preset-btn" onclick="applyPreset('green')">Forest</button>
+                                    <button class="preset-btn" onclick="applyPreset('orange')">Sunset</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="settings-section">
+                            <h3><i class="fas fa-server"></i> Server Settings</h3>
+                            <div class="setting-item">
+                                <label>
+                                    <input type="checkbox" id="auto-cleanup" checked>
+                                    <span>Enable Auto-cleanup</span>
+                                </label>
+                            </div>
+                            <div class="setting-item">
+                                <label>Max File Size (MB):</label>
+                                <input type="number" id="max-file-size" value="50" min="1" max="100">
+                            </div>
+                        </div>
+
+                        <div class="settings-actions">
+                            <button class="save-btn" onclick="saveSettings()">
+                                <i class="fas fa-save"></i>
+                                <span>Save Settings</span>
+                            </button>
+                            <button class="reset-btn" onclick="resetSettings()">
+                                <i class="fas fa-undo"></i>
+                                <span>Reset to Default</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </main>
 
-        <!-- Progress Bar -->
-        <div class="progress-container" id="progress-container" style="display: none;">
-            <div class="progress-bar">
-                <div class="progress-fill" id="progress-fill"></div>
-            </div>
-            <div class="progress-text" id="progress-text">Loading...</div>
-        </div>
-
-        <!-- Settings Modal -->
-        <div class="modal" id="settings-modal" style="display: none;">
+        <!-- File Preview Modal -->
+        <div class="modal" id="file-preview-modal" style="display: none;">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h2>Admin Settings</h2>
-                    <button class="modal-close" onclick="closeSettings()">&times;</button>
+                    <h3 id="preview-filename">File Preview</h3>
+                    <button class="modal-close" onclick="closePreview()">&times;</button>
                 </div>
                 <div class="modal-body">
-                    <div class="settings-section">
-                        <h3>Theme Settings</h3>
-                        <div class="color-picker-group">
-                            <div class="color-picker">
-                                <label>Primary Color:</label>
-                                <input type="color" id="primary-color" value="#4CAF50">
-                            </div>
-                            <div class="color-picker">
-                                <label>Accent Color:</label>
-                                <input type="color" id="accent-color" value="#2E7D32">
-                            </div>
-                        </div>
-                        <div class="preset-colors">
-                            <button class="preset-btn" onclick="applyPreset('green')">Green</button>
-                            <button class="preset-btn" onclick="applyPreset('blue')">Blue</button>
-                            <button class="preset-btn" onclick="applyPreset('purple')">Purple</button>
-                            <button class="preset-btn" onclick="applyPreset('orange')">Orange</button>
-                        </div>
-                    </div>
-                    <div class="settings-section">
-                        <h3>Server Settings</h3>
-                        <div class="setting-item">
-                            <label>Auto-cleanup enabled:</label>
-                            <input type="checkbox" id="auto-cleanup" checked>
-                        </div>
-                        <div class="setting-item">
-                            <label>Max file size (MB):</label>
-                            <input type="number" id="max-file-size" value="10" min="1" max="100">
-                        </div>
+                    <div class="preview-container" id="preview-container">
+                        <!-- File preview will be loaded here -->
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button class="action-btn" onclick="saveSettings()">Save Settings</button>
-                    <button class="action-btn secondary" onclick="closeSettings()">Cancel</button>
+                    <button class="btn secondary" onclick="downloadFileFromPreview()">
+                        <i class="fas fa-download"></i> Download
+                    </button>
+                    <button class="btn primary" onclick="copyLinkFromPreview()">
+                        <i class="fas fa-link"></i> Copy Link
+                    </button>
                 </div>
             </div>
         </div>
+
+        <!-- Loading Overlay -->
+        <div class="loading-overlay" id="loading-overlay" style="display: none;">
+            <div class="loading-spinner">
+                <div class="spinner"></div>
+                <p id="loading-text">Loading...</p>
+            </div>
+        </div>
+
+        <!-- Toast Notifications -->
+        <div class="toast-container" id="toast-container"></div>
     </div>
 
     <script src="/static/js/admin.js"></script>

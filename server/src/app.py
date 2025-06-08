@@ -533,19 +533,38 @@ async def admin_get_files():
     try:
         all_files = get_all_files()
         
-        # Convert to FileInfo format
+        # Convert to FileInfo format with proper URLs
         files = []
         for file_data in all_files:
+            # Generate proper URL with extension for images
+            file_id = file_data["file_id"]
+            file_extension = Path(file_data["original_filename"]).suffix
+            
+            if get_file_type(file_data["original_filename"]) == 'images':
+                url = f"{Config.BASE_URL}/files/{file_id}{file_extension}"
+            else:
+                url = f"{Config.BASE_URL}/files/{file_id}"
+            
+            # Check if thumbnail exists
+            thumbnail_path = Config.THUMBNAILS_DIR / f"{file_id}_thumb.jpg"
+            has_thumbnail = thumbnail_path.exists()
+            thumbnail_url = f"{Config.BASE_URL}/files/{file_id}/thumbnail" if has_thumbnail else None
+            
             file_info = FileInfo(
                 file_id=file_data["file_id"],
                 original_filename=file_data["original_filename"],
                 filename=file_data["filename"],
-                url=f"{Config.BASE_URL}/files/{file_data['file_id']}",
+                url=url,
                 file_size=file_data["file_size"],
                 upload_time=file_data["upload_time"],
                 file_type=file_data["file_type"]
             )
-            files.append(file_info)
+            
+            # Add thumbnail info (convert to dict to add extra fields)
+            file_dict = file_info.dict()
+            file_dict["thumbnail_url"] = thumbnail_url
+            file_dict["has_thumbnail"] = has_thumbnail
+            files.append(file_dict)
         
         return {"files": files, "total_count": len(files)}
         
