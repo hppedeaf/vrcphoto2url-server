@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VRCPhoto2URL - UI Debug Test</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+        }
+        
+        .debug-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .test-button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            margin: 5px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+        
+        .test-button:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+        }
+        
+        .test-button:active {
+            transform: translateY(0);
+        }
+        
+        .tab-test {
+            display: flex;
+            margin: 10px 0;
+        }
+        
+        .tab-button {
+            flex: 1;
+            padding: 15px 20px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: none;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-bottom: 2px solid transparent;
+        }
+        
+        .tab-button:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        .tab-button.active {
+            background: rgba(255, 255, 255, 0.3);
+            border-bottom-color: #4CAF50;
+        }
+        
+        .status {
+            margin: 10px 0;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 4px;
+            font-family: monospace;
+        }
+        
+        .success { color: #4CAF50; }
+        .error { color: #f44336; }
+        .info { color: #2196F3; }
+    </style>
+</head>
+<body>
+    <div class="debug-container">
+        <h1>🔍 VRCPhoto2URL - UI Interaction Debug Test</h1>
+        <p>This page tests basic UI interactions to diagnose click issues.</p>
+        
+        <div class="test-section">
+            <h3>📱 Basic Button Test</h3>
+            <p>Test if basic buttons work:</p>
+            <button class="test-button" onclick="showAlert('Button 1 clicked!')">Test Button 1</button>
+            <button class="test-button" onclick="showAlert('Button 2 clicked!')">Test Button 2</button>
+            <button class="test-button" onclick="showAlert('Button 3 clicked!')">Test Button 3</button>
+            <div class="status" id="button-status">Click a button above to test...</div>
+        </div>
+        
+        <div class="test-section">
+            <h3>📑 Tab Navigation Test</h3>
+            <p>Test if tab switching works:</p>
+            <div class="tab-test">
+                <button class="tab-button active" onclick="switchTestTab('tab1', this)">📋 Tab 1</button>
+                <button class="tab-button" onclick="switchTestTab('tab2', this)">📁 Tab 2</button>
+                <button class="tab-button" onclick="switchTestTab('tab3', this)">📊 Tab 3</button>
+            </div>
+            <div class="status" id="tab-status">Tab 1 is active</div>
+        </div>
+        
+        <div class="test-section">
+            <h3>🔗 Link to Main Interface</h3>
+            <p>Quick links to main interfaces:</p>
+            <button class="test-button" onclick="window.open('/client', '_blank')">🖥️ Open Client Interface</button>
+            <button class="test-button" onclick="window.open('/admin', '_blank')">👑 Open Admin Interface</button>
+            <button class="test-button" onclick="window.open('/', '_blank')">🏠 Open API Root</button>
+        </div>
+        
+        <div class="test-section">
+            <h3>🌐 Browser Info</h3>
+            <div class="status" id="browser-info">Loading browser info...</div>
+        </div>
+        
+        <div class="test-section">
+            <h3>🔧 JavaScript Test</h3>
+            <div class="status" id="js-test">Testing JavaScript...</div>
+        </div>
+        
+        <div class="test-section">
+            <h3>📝 Event Log</h3>
+            <div class="status" id="event-log">Ready to log events...</div>
+        </div>
+    </div>
+
+    <script>
+        // Log function
+        function log(message, type = 'info') {
+            const logElement = document.getElementById('event-log');
+            const timestamp = new Date().toLocaleTimeString();
+            const colorClass = type === 'error' ? 'error' : type === 'success' ? 'success' : 'info';
+            logElement.innerHTML += `<div class="${colorClass}">[${timestamp}] ${message}</div>`;
+            console.log(`[${timestamp}] ${message}`);
+        }
+        
+        // Show alert and log
+        function showAlert(message) {
+            alert(message);
+            log(`Alert shown: ${message}`, 'success');
+            document.getElementById('button-status').innerHTML = `<span class="success">✅ ${message}</span>`;
+        }
+        
+        // Tab switching test
+        function switchTestTab(tabName, button) {
+            // Remove active class from all tabs
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Add active class to clicked tab
+            button.classList.add('active');
+            
+            // Update status
+            document.getElementById('tab-status').innerHTML = `<span class="success">✅ ${tabName} is now active</span>`;
+            log(`Tab switched to: ${tabName}`, 'success');
+        }
+        
+        // Initialize tests
+        document.addEventListener('DOMContentLoaded', function() {
+            log('DOM Content Loaded', 'success');
+            
+            // Browser info
+            const browserInfo = {
+                userAgent: navigator.userAgent,
+                platform: navigator.platform,
+                language: navigator.language,
+                cookieEnabled: navigator.cookieEnabled,
+                javaEnabled: navigator.javaEnabled(),
+                screenSize: `${screen.width}x${screen.height}`,
+                windowSize: `${window.innerWidth}x${window.innerHeight}`
+            };
+            
+            document.getElementById('browser-info').innerHTML = `
+                <div><strong>User Agent:</strong> ${browserInfo.userAgent}</div>
+                <div><strong>Platform:</strong> ${browserInfo.platform}</div>
+                <div><strong>Language:</strong> ${browserInfo.language}</div>
+                <div><strong>Cookies:</strong> ${browserInfo.cookieEnabled ? 'Enabled' : 'Disabled'}</div>
+                <div><strong>Java:</strong> ${browserInfo.javaEnabled ? 'Enabled' : 'Disabled'}</div>
+                <div><strong>Screen:</strong> ${browserInfo.screenSize}</div>
+                <div><strong>Window:</strong> ${browserInfo.windowSize}</div>
+            `;
+            
+            // JavaScript test
+            try {
+                // Test basic JavaScript functionality
+                const testArray = [1, 2, 3];
+                const testResult = testArray.map(x => x * 2);
+                const testObject = { test: 'value' };
+                
+                document.getElementById('js-test').innerHTML = `
+                    <div class="success">✅ JavaScript is working correctly</div>
+                    <div>Array test: [${testResult.join(', ')}]</div>
+                    <div>Object test: ${JSON.stringify(testObject)}</div>
+                    <div>Date test: ${new Date().toISOString()}</div>
+                `;
+                
+                log('JavaScript functionality test passed', 'success');
+            } catch (error) {
+                document.getElementById('js-test').innerHTML = `
+                    <div class="error">❌ JavaScript error: ${error.message}</div>
+                `;
+                log(`JavaScript error: ${error.message}`, 'error');
+            }
+            
+            // Test event listeners
+            document.addEventListener('click', function(e) {
+                if (e.target.tagName === 'BUTTON') {
+                    log(`Button clicked: ${e.target.textContent}`, 'info');
+                }
+            });
+            
+            log('Debug page initialized successfully', 'success');
+        });
+        
+        // Error handler
+        window.addEventListener('error', function(e) {
+            log(`Global error: ${e.message} at ${e.filename}:${e.lineno}`, 'error');
+        });
+    </script>
+</body>
+</html>

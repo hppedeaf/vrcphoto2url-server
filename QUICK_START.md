@@ -8,18 +8,40 @@ Upload your VRChat screenshots to the cloud automatically and get instant sharea
 
 ## ⚡ Super Quick Setup
 
-### Step 1: Launch the Client
+### Option A: Interactive Setup (Recommended)
 ```bash
 # Windows: Double-click this file
 scripts\start_client.bat
 
-# Or run directly
-python scripts\launch_client.py
+# The launcher will guide you through:
+# 1. Enter your Railway server URL
+# 2. Generate or enter API key  
+# 3. Test connection
+# 4. Launch client
+```
+
+### Option B: Quick Demo Setup
+```bash
+# For immediate testing with demo server
+python setup_demo.py
+
+# Then launch client
+scripts\start_client.bat
+```
+
+### Option C: Manual Configuration
+```bash
+# Copy template and edit manually
+copy client\client_config.json.example client\client_config.json
+
+# Edit client\client_config.json with your settings:
+# - server_url: Your Railway app URL
+# - api_key: Your API key from Railway environment
 ```
 
 ### Step 2: Auto-Connection ✅
-The client automatically connects to our cloud server. You'll see:
-- Green "✅ Connected" status
+Once configured, the client automatically connects to your server. You'll see:
+- Green "✅ Connected" status  
 - Server URL displayed
 - Ready to upload!
 

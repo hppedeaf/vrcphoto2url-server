@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Client Interface Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #1a1a1a;
+            color: white;
+        }
+        
+        .tab-header {
+            display: flex;
+            margin-bottom: 20px;
+            background: #404040;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        
+        .tab-btn {
+            flex: 1;
+            padding: 15px;
+            background: #404040;
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 14px;
+        }
+        
+        .tab-btn:hover {
+            background: #525252;
+        }
+        
+        .tab-btn.active {
+            background: #4CAF50;
+        }
+        
+        .tab-content {
+            display: none;
+            padding: 20px;
+            background: #333;
+            border-radius: 5px;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .header-btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px;
+            font-size: 14px;
+        }
+        
+        .header-btn:hover {
+            background: #5CBF60;
+        }
+        
+        .status {
+            background: #2d2d2d;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Client Interface Test</h1>
+    
+    <!-- Header buttons like the real client -->
+    <div style="margin-bottom: 20px;">
+        <button class="header-btn" id="connect-btn">
+            <span class="btn-icon">🔗</span>
+            <span class="btn-text">Connect</span>
+        </button>
+        <button class="header-btn" id="monitor-btn">
+            <span class="btn-icon">🔍</span>
+            <span class="btn-text">Monitor</span>
+        </button>
+        <button class="header-btn" id="settings-btn">
+            <span class="btn-icon">⚙️</span>
+            <span class="btn-text">Settings</span>
+        </button>
+    </div>
+    
+    <!-- Tab structure like the real client -->
+    <div class="tab-header">
+        <button class="tab-btn active" data-tab="activity">📋 Activity</button>
+        <button class="tab-btn" data-tab="files">📁 Files</button>
+        <button class="tab-btn" data-tab="stats">📊 Statistics</button>
+    </div>
+    
+    <div class="tab-content active" id="activity-tab">
+        <h3>📋 Activity Content</h3>
+        <p>This is the activity tab. Click other tabs to test switching.</p>
+    </div>
+    
+    <div class="tab-content" id="files-tab">
+        <h3>📁 Files Content</h3>
+        <p>This is the files tab. Tab switching should work.</p>
+    </div>
+    
+    <div class="tab-content" id="stats-tab">
+        <h3>📊 Statistics Content</h3>
+        <p>This is the statistics tab. Testing JavaScript functionality.</p>
+    </div>
+    
+    <div class="status" id="status">Ready - Click buttons and tabs to test</div>
+    
+    <script>
+        console.log('Test page loading...');
+        
+        class FileManagerClient {
+            constructor() {
+                console.log('FileManagerClient initializing...');
+                this.init();
+            }
+            
+            init() {
+                console.log('Setting up event listeners...');
+                this.setupEventListeners();
+                console.log('Initialization complete');
+            }
+            
+            setupEventListeners() {
+                // Header buttons
+                document.getElementById('connect-btn').addEventListener('click', () => {
+                    console.log('Connect button clicked');
+                    this.updateStatus('Connect button clicked');
+                });
+                
+                document.getElementById('monitor-btn').addEventListener('click', () => {
+                    console.log('Monitor button clicked');
+                    this.updateStatus('Monitor button clicked');
+                });
+                
+                document.getElementById('settings-btn').addEventListener('click', () => {
+                    console.log('Settings button clicked');
+                    this.updateStatus('Settings button clicked');
+                });
+                
+                // Tab navigation
+                console.log('Setting up tab navigation...');
+                const tabButtons = document.querySelectorAll('.tab-btn');
+                console.log(`Found ${tabButtons.length} tab buttons`);
+                
+                tabButtons.forEach(btn => {
+                    console.log('Adding listener to tab:', btn.dataset.tab);
+                    btn.addEventListener('click', (e) => {
+                        console.log('Tab clicked:', e.target.dataset.tab);
+                        this.switchTab(e.target.dataset.tab);
+                    });
+                });
+            }
+            
+            switchTab(tabName) {
+                console.log('Switching to tab:', tabName);
+                
+                // Update tab buttons
+                document.querySelectorAll('.tab-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+
+                // Update tab content
+                document.querySelectorAll('.tab-content').forEach(content => {
+                    content.classList.remove('active');
+                });
+                document.getElementById(`${tabName}-tab`).classList.add('active');
+                
+                this.updateStatus(`Switched to ${tabName} tab`);
+            }
+            
+            updateStatus(message) {
+                const status = document.getElementById('status');
+                status.innerHTML = `${message} at ${new Date().toLocaleTimeString()}`;
+            }
+        }
+        
+        // Initialize when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('DOM loaded, initializing client...');
+            window.fileManagerClient = new FileManagerClient();
+        });
+        
+        // Global click debugging
+        document.addEventListener('click', (e) => {
+            console.log('Global click:', e.target.tagName, e.target.className);
+        });
+        
+        console.log('Script loaded');
+    </script>
+</body>
+</html>

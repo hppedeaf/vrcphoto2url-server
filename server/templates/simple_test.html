@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple UI Interaction Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #1a1a1a;
+            color: white;
+        }
+        
+        .test-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: #2d2d2d;
+            padding: 20px;
+            border-radius: 10px;
+        }
+        
+        .tab-header {
+            display: flex;
+            margin-bottom: 20px;
+            background: #404040;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        
+        .tab-btn {
+            flex: 1;
+            padding: 15px;
+            background: #404040;
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 14px;
+        }
+        
+        .tab-btn:hover {
+            background: #525252;
+        }
+        
+        .tab-btn.active {
+            background: #4CAF50;
+        }
+        
+        .test-button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px;
+            font-size: 14px;
+        }
+        
+        .test-button:hover {
+            background: #5CBF60;
+        }
+        
+        .tab-content {
+            display: none;
+            padding: 20px;
+            background: #333;
+            border-radius: 5px;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .status {
+            background: #2d2d2d;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🧪 Simple UI Interaction Test</h1>
+        
+        <div class="tab-header">
+            <button class="tab-btn active" data-tab="tab1">Tab 1</button>
+            <button class="tab-btn" data-tab="tab2">Tab 2</button>
+            <button class="tab-btn" data-tab="tab3">Tab 3</button>
+        </div>
+        
+        <div class="tab-content active" id="tab1">
+            <h3>Tab 1 Content</h3>
+            <button class="test-button" onclick="testClick('Button 1')">Test Button 1</button>
+            <p>This is tab 1 content. If you can click this tab and the buttons, the basic interaction works.</p>
+        </div>
+        
+        <div class="tab-content" id="tab2">
+            <h3>Tab 2 Content</h3>
+            <button class="test-button" onclick="testClick('Button 2')">Test Button 2</button>
+            <p>This is tab 2 content. Click events should work here too.</p>
+        </div>
+        
+        <div class="tab-content" id="tab3">
+            <h3>Tab 3 Content</h3>
+            <button class="test-button" onclick="testClick('Button 3')">Test Button 3</button>
+            <p>This is tab 3 content. Testing click event propagation.</p>
+        </div>
+        
+        <div class="status" id="status">Ready - Click tabs and buttons to test</div>
+        
+        <h3>Debug Info</h3>
+        <div class="status" id="debug-info">Loading...</div>
+    </div>
+
+    <script>
+        function testClick(buttonName) {
+            const status = document.getElementById('status');
+            status.innerHTML = `✅ ${buttonName} clicked successfully at ${new Date().toLocaleTimeString()}`;
+            console.log(`${buttonName} clicked`);
+        }
+        
+        function switchTab(tabId) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Remove active class from all buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Show selected tab
+            document.getElementById(tabId).classList.add('active');
+            
+            // Set button as active
+            document.querySelector(`[data-tab="${tabId}"]`).classList.add('active');
+            
+            // Update status
+            const status = document.getElementById('status');
+            status.innerHTML = `🔄 Switched to ${tabId} at ${new Date().toLocaleTimeString()}`;
+            console.log(`Switched to ${tabId}`);
+        }
+        
+        // Initialize after DOM loads
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add tab click listeners
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const tabId = this.getAttribute('data-tab');
+                    switchTab(tabId);
+                });
+            });
+            
+            // Update debug info
+            const debugInfo = document.getElementById('debug-info');
+            debugInfo.innerHTML = `
+                <strong>Browser:</strong> ${navigator.userAgent}<br>
+                <strong>Screen:</strong> ${screen.width}x${screen.height}<br>
+                <strong>Viewport:</strong> ${window.innerWidth}x${window.innerHeight}<br>
+                <strong>Touch Device:</strong> ${('ontouchstart' in window) ? 'Yes' : 'No'}<br>
+                <strong>JavaScript:</strong> Working ✅
+            `;
+            
+            console.log('Simple test page loaded');
+        });
+        
+        // Global click handler for debugging
+        document.addEventListener('click', function(e) {
+            console.log('Click detected:', e.target.tagName, e.target.className);
+        });
+    </script>
+</body>
+</html>

@@ -20,9 +20,8 @@ class FileManagerClient {
         this.currentTheme = localStorage.getItem('client_theme') || 'green';
         
         this.init();
-    }
-
-    init() {
+    }    init() {
+        console.log('FileManagerClient initializing...');
         this.setupEventListeners();
         this.loadSettings();
         this.hideLoadingScreen();
@@ -33,6 +32,7 @@ class FileManagerClient {
         if (this.serverUrl) {
             this.testConnection(true);
         }
+        console.log('FileManagerClient initialized successfully');
     }
 
     hideLoadingScreen() {
@@ -66,12 +66,20 @@ class FileManagerClient {
         // Header buttons
         document.getElementById('connect-btn').addEventListener('click', this.showConnectionModal.bind(this));
         document.getElementById('monitor-btn').addEventListener('click', this.toggleMonitoring.bind(this));
-        document.getElementById('settings-btn').addEventListener('click', this.showSettingsModal.bind(this));
-
-        // Tab navigation
-        document.querySelectorAll('.tab-btn').forEach(btn => {
+        document.getElementById('settings-btn').addEventListener('click', this.showSettingsModal.bind(this));        // Tab navigation
+        console.log('Setting up tab navigation...');
+        const tabButtons = document.querySelectorAll('.tab-btn');
+        console.log(`Found ${tabButtons.length} tab buttons`);
+        
+        tabButtons.forEach(btn => {
+            console.log('Adding listener to tab:', btn.dataset.tab);
             btn.addEventListener('click', (e) => {
-                this.switchTab(e.target.dataset.tab);
+                console.log('Tab clicked:', e.target.dataset.tab);
+                try {
+                    this.switchTab(e.target.dataset.tab);
+                } catch (error) {
+                    console.error('Switch tab error:', error);
+                }
             });
         });
 

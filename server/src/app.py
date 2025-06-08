@@ -617,6 +617,31 @@ async def get_stats(auth: bool = Depends(verify_api_key)):
 @app.get("/client", response_class=HTMLResponse)
 async def client_interface(request: Request):
     """Serve the client interface"""
+    return templates.TemplateResponse("client_working.html", {"request": request})
+
+@app.get("/debug", response_class=HTMLResponse)
+async def debug_interface(request: Request):
+    """Serve the debug test page for UI troubleshooting"""
+    return templates.TemplateResponse("debug.html", {"request": request})
+
+@app.get("/simple-test", response_class=HTMLResponse)
+async def simple_test_interface(request: Request):
+    """Serve a simple UI interaction test page"""
+    return templates.TemplateResponse("simple_test.html", {"request": request})
+
+@app.get("/client-test", response_class=HTMLResponse)
+async def client_test_interface(request: Request):
+    """Serve a client interface test page"""
+    return templates.TemplateResponse("client_test.html", {"request": request})
+
+@app.get("/client-working", response_class=HTMLResponse)
+async def client_working_interface(request: Request):
+    """Serve a working client interface with inline JavaScript"""
+    return templates.TemplateResponse("client_working.html", {"request": request})
+
+@app.get("/client-original", response_class=HTMLResponse)
+async def client_original_interface(request: Request):
+    """Serve the original client interface (for comparison/debugging)"""
     return templates.TemplateResponse("client.html", {"request": request})
 
 @app.get("/admin/login", response_class=HTMLResponse)
