@@ -288,10 +288,17 @@ async def get_file(file_id: str):
         if not metadata:
             raise HTTPException(status_code=404, detail="File not found")
         
-        # Check if file exists
-        file_path = Config.UPLOAD_DIR / "files" / metadata["filename"]
+        # Check if file exists - handle both old and new metadata formats
+        filename = metadata.get("filename", metadata.get("stored_filename"))
+        if not filename:
+            raise HTTPException(status_code=404, detail="File metadata incomplete")
+            
+        file_path = Config.UPLOAD_DIR / "files" / filename
         if not file_path.exists():
-            raise HTTPException(status_code=404, detail="File not found on disk")
+            # Try in the root upload directory for older files
+            file_path = Config.UPLOAD_DIR / filename
+            if not file_path.exists():
+                raise HTTPException(status_code=404, detail="File not found on disk")
         
         # Return file
         return FileResponse(
@@ -315,10 +322,17 @@ async def get_file_with_extension(file_id: str, extension: str):
         if not metadata:
             raise HTTPException(status_code=404, detail="File not found")
         
-        # Check if file exists
-        file_path = Config.UPLOAD_DIR / "files" / metadata["filename"]
+        # Check if file exists - handle both old and new metadata formats
+        filename = metadata.get("filename", metadata.get("stored_filename"))
+        if not filename:
+            raise HTTPException(status_code=404, detail="File metadata incomplete")
+            
+        file_path = Config.UPLOAD_DIR / "files" / filename
         if not file_path.exists():
-            raise HTTPException(status_code=404, detail="File not found on disk")
+            # Try in the root upload directory for older files
+            file_path = Config.UPLOAD_DIR / filename
+            if not file_path.exists():
+                raise HTTPException(status_code=404, detail="File not found on disk")
         
         # Verify extension matches
         expected_extension = Path(metadata["original_filename"]).suffix.lower()
@@ -417,10 +431,15 @@ async def delete_file(file_id: str, auth: bool = Depends(verify_api_key)):
         if not metadata:
             raise HTTPException(status_code=404, detail="File not found")
         
-        # Delete actual file
-        file_path = Config.UPLOAD_DIR / "files" / metadata["filename"]
-        if file_path.exists():
-            file_path.unlink()
+        # Delete actual file - handle both old and new metadata formats
+        filename = metadata.get("filename", metadata.get("stored_filename"))
+        if filename:
+            file_path = Config.UPLOAD_DIR / "files" / filename
+            if not file_path.exists():
+                # Try in the root upload directory for older files
+                file_path = Config.UPLOAD_DIR / filename
+            if file_path.exists():
+                file_path.unlink()
         
         # Delete thumbnail if exists
         thumbnail_path = Config.THUMBNAILS_DIR / f"{file_id}_thumb.jpg"
