@@ -27,13 +27,34 @@ def check_config():
     script_dir = Path(__file__).parent.parent  # Go up to VRCPhoto2URL root
     client_dir = script_dir / "client"
     config_file = client_dir / "client_config.json"
+    
     if config_file.exists():
         print("✅ Client configuration found")
-        return True
+        # Check if it's properly configured
+        try:
+            import json
+            with open(config_file, 'r') as f:
+                config = json.load(f)
+            
+            if config.get('server_url') == 'https://your-app.railway.app':
+                print("⚠️  Configuration uses template values")
+                print("   Please update client_config.json with your Railway URL")
+                return False
+            elif config.get('api_key') == 'your-api-key-here':
+                print("⚠️  Configuration uses template API key")
+                print("   Please update client_config.json with your API key")
+                return False
+            else:
+                print(f"   Server: {config.get('server_url')}")
+                return True
+        except Exception as e:
+            print(f"❌ Error reading configuration: {e}")
+            return False
     else:
         print("❌ Client configuration not found")
         print(f"\n💡 Expected file: {config_file}")
         print("   This file should contain server URL and API key")
+        print("   Copy from client_config.json.example and update values")
         return False
 
 def launch_client():

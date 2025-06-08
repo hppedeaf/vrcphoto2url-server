@@ -7,6 +7,7 @@ A FastAPI-based file server designed for Railway deployment
 import os
 import uuid
 import json
+import time
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional, List, Dict, Any
@@ -79,9 +80,9 @@ class Config:
     }
     
     # Railway URL (will be set automatically by Railway)
-    BASE_URL = os.getenv("RAILWAY_STATIC_URL", 
-                        os.getenv("RAILWAY_PUBLIC_DOMAIN", 
-                                 "https://vrcphoto2url-server-production.up.railway.app"))
+    BASE_URL = os.getenv("RAILWAY_PUBLIC_DOMAIN", 
+                        os.getenv("RAILWAY_STATIC_URL", 
+                                 os.getenv("PUBLIC_URL", "http://localhost:8000")))
 
 # Initialize FastAPI
 app = FastAPI(
@@ -137,20 +138,84 @@ def load_file_metadata(file_id: str) -> Optional[Dict[str, Any]]:
             return json.load(f)
     return None
 
+# Performance optimization: Add caching
+_file_cache = {}
+_cache_timestamp = 0
+_stats_cache = {}
+_stats_cache_timestamp = 0
+CACHE_TTL = 30  # Cache for 30 seconds
+STATS_CACHE_TTL = 15  # Stats cache for 15 seconds (faster refresh for UI)
+
 def get_all_files() -> List[Dict[str, Any]]:
-    """Get all file metadata"""
-    files = []
-    for json_file in Config.UPLOAD_DIR.glob("*.json"):
-        try:
-            with open(json_file, 'r') as f:
-                metadata = json.load(f)
-                files.append(metadata)
-        except Exception as e:
-            logger.error(f"Error reading metadata file {json_file}: {e}")
+    """Get all file metadata with caching and performance optimizations"""
+    global _file_cache, _cache_timestamp
+    current_time = time.time()
     
-    # Sort by upload time (newest first)
-    files.sort(key=lambda x: x.get('upload_time', ''), reverse=True)
+    # Check if cache is still valid
+    if current_time - _cache_timestamp < CACHE_TTL and _file_cache:
+        return _file_cache.get('files', [])
+    
+    files = []
+    try:
+        # Use pathlib for faster file operations
+        json_files = list(Config.UPLOAD_DIR.glob("*.json"))
+        
+        # Early return if no files
+        if not json_files:
+            _file_cache = {'files': []}
+            _cache_timestamp = current_time
+            return []
+        
+        # Process files with better error handling and performance
+        for json_file in json_files:
+            try:
+                # Check file size before reading (skip very large metadata files)
+                if json_file.stat().st_size > 10240:  # Skip files > 10KB (unusual for metadata)
+                    logger.warning(f"Skipping unusually large metadata file: {json_file}")
+                    continue
+                    
+                with open(json_file, 'r', encoding='utf-8') as f:
+                    metadata = json.load(f)
+                    
+                    # Validate metadata structure
+                    if 'file_id' in metadata and 'upload_time' in metadata:
+                        files.append(metadata)
+                    else:
+                        logger.warning(f"Invalid metadata structure in {json_file}")
+                        
+            except (json.JSONDecodeError, UnicodeDecodeError) as e:
+                logger.error(f"Error reading metadata file {json_file}: {e}")
+                continue
+            except Exception as e:
+                logger.error(f"Unexpected error reading metadata file {json_file}: {e}")
+                continue
+                
+    except Exception as e:
+        logger.error(f"Error scanning files directory: {e}")
+        return []
+    
+    # Sort by upload time (newest first) - optimized key function
+    try:
+        files.sort(key=lambda x: x.get('upload_time', '1970-01-01T00:00:00'), reverse=True)
+    except Exception as e:
+        logger.error(f"Error sorting files: {e}")
+        # Fallback to unsorted list
+    
+    # Update cache
+    _file_cache = {'files': files}
+    _cache_timestamp = current_time
+    
+    logger.debug(f"Loaded {len(files)} files in {time.time() - current_time:.3f}s")
+    
     return files
+
+def invalidate_file_cache():
+    """Invalidate the file cache to force refresh"""
+    global _file_cache, _cache_timestamp, _stats_cache, _stats_cache_timestamp
+    _file_cache = {}
+    _cache_timestamp = 0
+    _stats_cache = {}
+    _stats_cache_timestamp = 0
 
 def create_thumbnail(image_path: Path, thumbnail_path: Path, size: tuple = (200, 200)):
     """Create thumbnail for image"""
@@ -261,6 +326,9 @@ async def upload_file(
         }
         
         save_file_metadata(file_id, metadata)
+        
+        # Invalidate file cache to ensure fresh data on next request
+        invalidate_file_cache()
         
         logger.info(f"File uploaded: {file.filename} -> {file_id}")
         
@@ -435,6 +503,9 @@ async def delete_file(file_id: str, auth: bool = Depends(verify_api_key)):
         if metadata_path.exists():
             metadata_path.unlink()
         
+        # Invalidate file cache to ensure fresh data on next request
+        invalidate_file_cache()
+        
         logger.info(f"File deleted: {file_id}")
         
         return DeleteResponse(
@@ -473,6 +544,10 @@ async def delete_old_files(
                 logger.error(f"Error processing file for deletion: {e}")
                 continue
         
+        # Invalidate file cache once after all deletions
+        if deleted_count > 0:
+            invalidate_file_cache()
+        
         return DeleteResponse(
             success=True,
             message=f"Deleted {deleted_count} old files"
@@ -484,26 +559,55 @@ async def delete_old_files(
 
 @app.get("/stats")
 async def get_stats(auth: bool = Depends(verify_api_key)):
-    """Get server statistics"""
+    """Get server statistics with caching for better performance"""
+    global _stats_cache, _stats_cache_timestamp
+    current_time = time.time()
+    
+    # Check if stats cache is still valid
+    if current_time - _stats_cache_timestamp < STATS_CACHE_TTL and _stats_cache:
+        return _stats_cache
+    
     try:
         all_files = get_all_files()
         
-        total_files = len(all_files)
-        total_size = sum(file_data.get("file_size", 0) for file_data in all_files)
+        if not all_files:
+            # Handle empty file list case
+            stats = {
+                "total_files": 0,
+                "total_size_bytes": 0,
+                "total_size_mb": 0.0,
+                "file_types": {},
+                "server_uptime": "Server running"
+            }
+        else:
+            # Optimized single-pass calculation
+            total_files = len(all_files)
+            total_size = 0
+            type_counts = {}
+            
+            for file_data in all_files:
+                # Size calculation
+                file_size = file_data.get("file_size", 0)
+                if isinstance(file_size, (int, float)):
+                    total_size += file_size
+                
+                # Type counting
+                file_type = file_data.get("file_type", "unknown")
+                type_counts[file_type] = type_counts.get(file_type, 0) + 1
+            
+            stats = {
+                "total_files": total_files,
+                "total_size_bytes": total_size,
+                "total_size_mb": round(total_size / (1024 * 1024), 2) if total_size > 0 else 0.0,
+                "file_types": type_counts,
+                "server_uptime": "Server running"
+            }
         
-        # File type breakdown
-        type_counts = {}
-        for file_data in all_files:
-            file_type = file_data.get("file_type", "unknown")
-            type_counts[file_type] = type_counts.get(file_type, 0) + 1
+        # Update stats cache
+        _stats_cache = stats
+        _stats_cache_timestamp = current_time
         
-        return {
-            "total_files": total_files,
-            "total_size_bytes": total_size,
-            "total_size_mb": round(total_size / (1024 * 1024), 2),
-            "file_types": type_counts,
-            "server_uptime": "Server running"
-        }
+        return stats
         
     except Exception as e:
         logger.error(f"Get stats error: {e}")
@@ -584,49 +688,84 @@ async def admin_delete_file(file_id: str):
 
 @app.get("/admin/stats")
 async def admin_get_stats():
-    """Get detailed statistics for admin dashboard"""
+    """Get detailed statistics for admin dashboard with caching"""
+    global _stats_cache, _stats_cache_timestamp
+    current_time = time.time()
+    
+    # Check if detailed stats cache exists and is valid
+    admin_cache_key = 'admin_stats'
+    if (current_time - _stats_cache_timestamp < STATS_CACHE_TTL and 
+        _stats_cache and admin_cache_key in _stats_cache):
+        return _stats_cache[admin_cache_key]
+    
     try:
         all_files = get_all_files()
         
-        total_files = len(all_files)
-        total_size = sum(file_data.get("file_size", 0) for file_data in all_files)
-        
-        # Calculate uploads today
-        today = datetime.now().date()
-        uploads_today = 0
-        
-        for file_data in all_files:
-            try:
-                upload_date = datetime.fromisoformat(file_data["upload_time"]).date()
-                if upload_date == today:
-                    uploads_today += 1
-            except:
-                continue
-        
-        # File type breakdown
-        type_counts = {}
-        for file_data in all_files:
-            file_type = file_data.get("file_type", "unknown")
-            category = "other"
-            if file_type.startswith("image/"):
-                category = "images"
-            elif file_type.startswith("video/"):
-                category = "videos"
-            elif file_type.startswith("audio/"):
-                category = "audio"
-            elif "pdf" in file_type or "document" in file_type:
-                category = "documents"
+        if not all_files:
+            # Handle empty file list case
+            admin_stats = {
+                "total_files": 0,
+                "total_size_bytes": 0,
+                "total_size_mb": 0.0,
+                "uploads_today": 0,
+                "file_types": {},
+                "server_uptime": "Online"
+            }
+        else:
+            total_files = len(all_files)
+            total_size = 0
+            uploads_today = 0
+            type_counts = {}
+            today = datetime.now().date()
             
-            type_counts[category] = type_counts.get(category, 0) + 1
+            # Single-pass optimization
+            for file_data in all_files:
+                # Size calculation
+                file_size = file_data.get("file_size", 0)
+                if isinstance(file_size, (int, float)):
+                    total_size += file_size
+                
+                # Uploads today calculation
+                try:
+                    upload_time = file_data.get("upload_time")
+                    if upload_time:
+                        upload_date = datetime.fromisoformat(upload_time).date()
+                        if upload_date == today:
+                            uploads_today += 1
+                except Exception:
+                    pass  # Skip invalid dates
+                
+                # File type categorization
+                file_type = file_data.get("file_type", "unknown")
+                category = "other"
+                if isinstance(file_type, str):
+                    if file_type.startswith("image/"):
+                        category = "images"
+                    elif file_type.startswith("video/"):
+                        category = "videos"
+                    elif file_type.startswith("audio/"):
+                        category = "audio"
+                    elif "pdf" in file_type or "document" in file_type:
+                        category = "documents"
+                
+                type_counts[category] = type_counts.get(category, 0) + 1
+            
+            admin_stats = {
+                "total_files": total_files,
+                "total_size_bytes": total_size,
+                "total_size_mb": round(total_size / (1024 * 1024), 2) if total_size > 0 else 0.0,
+                "uploads_today": uploads_today,
+                "file_types": type_counts,
+                "server_uptime": "Online"
+            }
         
-        return {
-            "total_files": total_files,
-            "total_size_bytes": total_size,
-            "total_size_mb": round(total_size / (1024 * 1024), 2),
-            "uploads_today": uploads_today,
-            "file_types": type_counts,
-            "server_uptime": "Online"
-        }
+        # Update admin stats cache
+        if not _stats_cache:
+            _stats_cache = {}
+        _stats_cache[admin_cache_key] = admin_stats
+        _stats_cache_timestamp = current_time
+        
+        return admin_stats
         
     except Exception as e:
         logger.error(f"Admin get stats error: {e}")
