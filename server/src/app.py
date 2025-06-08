@@ -79,7 +79,9 @@ class Config:
     }
     
     # Railway URL (will be set automatically by Railway)
-    BASE_URL = os.getenv("RAILWAY_STATIC_URL", f"http://localhost:{PORT}")
+    BASE_URL = os.getenv("RAILWAY_STATIC_URL", 
+                        os.getenv("RAILWAY_PUBLIC_DOMAIN", 
+                                 "https://vrcphoto2url-server-production.up.railway.app"))
 
 # Initialize FastAPI
 app = FastAPI(
@@ -218,7 +220,12 @@ async def upload_file(
         file_id = str(uuid.uuid4())
         file_extension = Path(file.filename).suffix
         stored_filename = f"{file_id}{file_extension}"
-        file_path = Config.UPLOAD_DIR / stored_filename
+        
+        # Ensure files subdirectory exists
+        files_dir = Config.UPLOAD_DIR / "files"
+        files_dir.mkdir(parents=True, exist_ok=True)
+        
+        file_path = files_dir / stored_filename
         
         # Save file
         with open(file_path, "wb") as f:
@@ -231,8 +238,14 @@ async def upload_file(
             thumbnail_path = Config.THUMBNAILS_DIR / thumbnail_filename
             create_thumbnail(file_path, thumbnail_path)
         
-        # Generate file URL
-        file_url = f"{Config.BASE_URL}/files/{file_id}"
+        # Generate file URL with proper extension for direct image viewing
+        file_extension = Path(file.filename).suffix.lower()
+        if get_file_type(file.filename) == 'images':
+            # For images, use direct file serving with extension
+            file_url = f"{Config.BASE_URL}/files/{file_id}{file_extension}"
+        else:
+            # For other files, use standard endpoint
+            file_url = f"{Config.BASE_URL}/files/{file_id}"
         
         # Save metadata
         metadata = {
@@ -276,7 +289,7 @@ async def get_file(file_id: str):
             raise HTTPException(status_code=404, detail="File not found")
         
         # Check if file exists
-        file_path = Config.UPLOAD_DIR / metadata["filename"]
+        file_path = Config.UPLOAD_DIR / "files" / metadata["filename"]
         if not file_path.exists():
             raise HTTPException(status_code=404, detail="File not found on disk")
         
@@ -291,6 +304,48 @@ async def get_file(file_id: str):
         raise
     except Exception as e:
         logger.error(f"Get file error: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+@app.get("/files/{file_id}{extension:path}")
+async def get_file_with_extension(file_id: str, extension: str):
+    """Get a file by ID with extension (for direct image viewing)"""
+    try:
+        # Load metadata
+        metadata = load_file_metadata(file_id)
+        if not metadata:
+            raise HTTPException(status_code=404, detail="File not found")
+        
+        # Check if file exists
+        file_path = Config.UPLOAD_DIR / "files" / metadata["filename"]
+        if not file_path.exists():
+            raise HTTPException(status_code=404, detail="File not found on disk")
+        
+        # Verify extension matches
+        expected_extension = Path(metadata["original_filename"]).suffix.lower()
+        if extension.lower() != expected_extension:
+            raise HTTPException(status_code=404, detail="File extension mismatch")
+        
+        # For images, set proper media type to display inline
+        content_type = metadata.get("content_type", "application/octet-stream")
+        if get_file_type(metadata["original_filename"]) == 'images':
+            # Force inline display for images
+            return FileResponse(
+                path=file_path,
+                media_type=content_type,
+                headers={"Content-Disposition": "inline"}
+            )
+        else:
+            # For other files, use standard download behavior
+            return FileResponse(
+                path=file_path,
+                filename=metadata["original_filename"],
+                media_type=content_type
+            )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Get file with extension error: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
 @app.get("/files/{file_id}/info", response_model=FileInfo)
@@ -363,7 +418,7 @@ async def delete_file(file_id: str, auth: bool = Depends(verify_api_key)):
             raise HTTPException(status_code=404, detail="File not found")
         
         # Delete actual file
-        file_path = Config.UPLOAD_DIR / metadata["filename"]
+        file_path = Config.UPLOAD_DIR / "files" / metadata["filename"]
         if file_path.exists():
             file_path.unlink()
         
