@@ -311,6 +311,14 @@ async def get_file(file_id: str):
             file_path = Config.UPLOAD_DIR / filename
             
         if not file_path.exists():
+            # Debug logging to understand what's happening
+            logger.error(f"File not found: {filename}")
+            logger.error(f"Checked paths:")
+            logger.error(f"  - {Config.UPLOAD_DIR / 'files' / filename}")
+            logger.error(f"  - {Config.UPLOAD_DIR / filename}")
+            logger.error(f"Upload dir contents: {list(Config.UPLOAD_DIR.iterdir()) if Config.UPLOAD_DIR.exists() else 'Directory does not exist'}")
+            files_dir = Config.UPLOAD_DIR / "files"
+            logger.error(f"Files dir contents: {list(files_dir.iterdir()) if files_dir.exists() else 'Directory does not exist'}")
             raise HTTPException(status_code=404, detail=f"File not found on disk: {filename}")
         
         # Determine content type and display behavior
