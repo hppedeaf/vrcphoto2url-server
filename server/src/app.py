@@ -281,86 +281,62 @@ async def upload_file(
 
 @app.get("/files/{file_id}")
 async def get_file(file_id: str):
-    """Get a file by ID"""
+    """Get a file by ID - handles both with and without extensions"""
     try:
+        # Parse file_id and extension if present
+        actual_file_id = file_id
+        extension = None
+        
+        if '.' in file_id:
+            # Has extension - extract file_id and extension
+            actual_file_id, ext = file_id.rsplit('.', 1)
+            extension = f".{ext}"
+        
         # Load metadata
-        metadata = load_file_metadata(file_id)
+        metadata = load_file_metadata(actual_file_id)
         if not metadata:
-            raise HTTPException(status_code=404, detail="File not found")
+            raise HTTPException(status_code=404, detail=f"File metadata not found for ID: {actual_file_id}")
         
-        # Check if file exists - handle both old and new metadata formats
-        filename = metadata.get("filename", metadata.get("stored_filename"))
+        # Get filename from metadata
+        filename = metadata.get("filename")
         if not filename:
-            raise HTTPException(status_code=404, detail="File metadata incomplete")
+            raise HTTPException(status_code=404, detail="File metadata incomplete - no filename")
             
+        # Try to find the file in the correct location
+        # New files are stored in uploads/files/
         file_path = Config.UPLOAD_DIR / "files" / filename
+        
         if not file_path.exists():
-            # Try in the root upload directory for older files
+            # Fallback: try the root upload directory for older files
             file_path = Config.UPLOAD_DIR / filename
-            if not file_path.exists():
-                raise HTTPException(status_code=404, detail="File not found on disk")
-        
-        # Return file
-        return FileResponse(
-            path=file_path,
-            filename=metadata["original_filename"],
-            media_type=metadata.get("content_type", "application/octet-stream")
-        )
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Get file error: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
-
-@app.get("/files/{file_id}{extension:path}")
-async def get_file_with_extension(file_id: str, extension: str):
-    """Get a file by ID with extension (for direct image viewing)"""
-    try:
-        # Load metadata
-        metadata = load_file_metadata(file_id)
-        if not metadata:
-            raise HTTPException(status_code=404, detail="File not found")
-        
-        # Check if file exists - handle both old and new metadata formats
-        filename = metadata.get("filename", metadata.get("stored_filename"))
-        if not filename:
-            raise HTTPException(status_code=404, detail="File metadata incomplete")
             
-        file_path = Config.UPLOAD_DIR / "files" / filename
         if not file_path.exists():
-            # Try in the root upload directory for older files
-            file_path = Config.UPLOAD_DIR / filename
-            if not file_path.exists():
-                raise HTTPException(status_code=404, detail="File not found on disk")
+            raise HTTPException(status_code=404, detail=f"File not found on disk: {filename}")
         
-        # Verify extension matches
-        expected_extension = Path(metadata["original_filename"]).suffix.lower()
-        if extension.lower() != expected_extension:
-            raise HTTPException(status_code=404, detail="File extension mismatch")
-        
-        # For images, set proper media type to display inline
+        # Determine content type and display behavior
         content_type = metadata.get("content_type", "application/octet-stream")
-        if get_file_type(metadata["original_filename"]) == 'images':
-            # Force inline display for images
+        original_filename = metadata.get("original_filename", filename)
+        
+        # If accessed with extension and it's an image, display inline
+        if extension and get_file_type(original_filename) == 'images':
             return FileResponse(
                 path=file_path,
                 media_type=content_type,
                 headers={"Content-Disposition": "inline"}
             )
         else:
-            # For other files, use standard download behavior
+            # Standard download behavior
             return FileResponse(
                 path=file_path,
-                filename=metadata["original_filename"],
+                filename=original_filename,
                 media_type=content_type
             )
         
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Get file with extension error: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        logger.error(f"Get file error for {file_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 @app.get("/files/{file_id}/info", response_model=FileInfo)
 async def get_file_info(file_id: str, auth: bool = Depends(verify_api_key)):
