@@ -1,0 +1,379 @@
+/* VRCPhoto2URL - Responsive Design Fixes for Server Interface */
+
+/* Fix for window resizing and maximizing issues */
+.responsive-fixes {
+    /* Ensure proper viewport handling */
+    html {
+        overflow-x: hidden;
+        width: 100%;
+        height: 100%;
+    }
+    
+    body {
+        overflow-x: hidden;
+        width: 100%;
+        min-height: 100vh;
+        max-width: 100vw;
+    }
+    
+    /* App Container Fixes */
+    .app-container {
+        display: flex;
+        min-height: 100vh;
+        width: 100%;
+        max-width: 100vw;
+        overflow-x: hidden;
+        position: relative;
+    }
+    
+    /* Sidebar Fixes */
+    .sidebar {
+        width: 280px;
+        min-width: 280px;
+        max-width: 280px;
+        background: var(--bg-surface);
+        border-right: 1px solid var(--border-color);
+        display: flex;
+        flex-direction: column;
+        transition: all 0.3s ease;
+        height: 100vh;
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+        backdrop-filter: blur(10px);
+        flex-shrink: 0;
+    }
+    
+    .sidebar.collapsed {
+        width: 80px;
+        min-width: 80px;
+        max-width: 80px;
+    }
+    
+    /* Main Content Fixes */
+    .main-content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+        width: 100%;
+        max-width: none;
+        overflow-x: auto;
+        transition: all 0.3s ease;
+        position: relative;
+    }
+    
+    /* Header Fixes */
+    .main-header {
+        background: var(--bg-surface);
+        border-bottom: 1px solid var(--border-color);
+        padding: var(--space-6);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        backdrop-filter: blur(10px);
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        width: 100%;
+        box-sizing: border-box;
+    }
+    
+    /* Content Area Fixes */
+    .content-area {
+        flex: 1;
+        padding: var(--space-6);
+        overflow-y: auto;
+        width: 100%;
+        box-sizing: border-box;
+    }
+    
+    /* Modal Fixes for Resizing */
+    .modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        z-index: 2000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: var(--space-4);
+        box-sizing: border-box;
+    }
+    
+    .modal-content {
+        background: var(--bg-surface);
+        border-radius: var(--radius-xl);
+        border: 1px solid var(--border-color);
+        box-shadow: var(--shadow-xl);
+        max-width: 90vw;
+        max-height: 90vh;
+        width: 100%;
+        padding: var(--space-6);
+        overflow-y: auto;
+        box-sizing: border-box;
+    }
+    
+    /* Table Responsive Fixes */
+    .file-table-container {
+        width: 100%;
+        overflow-x: auto;
+        box-sizing: border-box;
+    }
+    
+    .file-table {
+        width: 100%;
+        min-width: 600px;
+        border-collapse: collapse;
+    }
+    
+    /* Grid Layout Fixes */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: var(--space-6);
+        width: 100%;
+        box-sizing: border-box;
+    }
+    
+    .files-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: var(--space-4);
+        width: 100%;
+        box-sizing: border-box;
+    }
+}
+
+/* Enhanced Responsive Breakpoints */
+@media (max-width: 1200px) {
+    .sidebar {
+        width: 240px;
+        min-width: 240px;
+        max-width: 240px;
+    }
+    
+    .sidebar.collapsed {
+        width: 60px;
+        min-width: 60px;
+        max-width: 60px;
+    }
+    
+    .stats-grid {
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    }
+}
+
+@media (max-width: 992px) {
+    .sidebar {
+        width: 200px;
+        min-width: 200px;
+        max-width: 200px;
+    }
+    
+    .header-right {
+        flex-direction: column;
+        gap: var(--space-2);
+    }
+    
+    .main-header {
+        padding: var(--space-4);
+    }
+    
+    .content-area {
+        padding: var(--space-4);
+    }
+}
+
+@media (max-width: 768px) {
+    .app-container {
+        flex-direction: column;
+    }
+    
+    .sidebar {
+        width: 100%;
+        max-width: 100%;
+        height: auto;
+        position: relative;
+        border-right: none;
+        border-bottom: 1px solid var(--border-color);
+    }
+    
+    .sidebar.collapsed {
+        width: 100%;
+        max-width: 100%;
+    }
+    
+    .main-content {
+        width: 100%;
+        max-width: 100%;
+    }
+    
+    .main-header {
+        flex-direction: column;
+        gap: var(--space-4);
+        text-align: center;
+    }
+    
+    .header-right {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .modal-content {
+        max-width: 95vw;
+        padding: var(--space-4);
+    }
+    
+    .file-table {
+        min-width: 500px;
+    }
+    
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .files-grid {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    }
+}
+
+@media (max-width: 480px) {
+    .main-header {
+        padding: var(--space-3);
+    }
+    
+    .content-area {
+        padding: var(--space-3);
+    }
+    
+    .modal-content {
+        max-width: 98vw;
+        padding: var(--space-3);
+        margin: var(--space-2);
+    }
+    
+    .file-table {
+        min-width: 400px;
+        font-size: 0.875rem;
+    }
+    
+    .files-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .stats-grid {
+        gap: var(--space-3);
+    }
+}
+
+/* Window Maximizing Fixes */
+@media (min-width: 1400px) {
+    .sidebar {
+        width: 320px;
+        min-width: 320px;
+        max-width: 320px;
+    }
+    
+    .sidebar.collapsed {
+        width: 100px;
+        min-width: 100px;
+        max-width: 100px;
+    }
+    
+    .main-header {
+        padding: var(--space-8);
+    }
+    
+    .content-area {
+        padding: var(--space-8);
+    }
+    
+    .stats-grid {
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    }
+}
+
+/* Ultra-wide screen support */
+@media (min-width: 1920px) {
+    .app-container {
+        max-width: 1920px;
+        margin: 0 auto;
+    }
+    
+    .stats-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+    
+    .files-grid {
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    }
+}
+
+/* High DPI / Retina Display Fixes */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+    .sidebar {
+        backdrop-filter: blur(20px);
+    }
+    
+    .main-header {
+        backdrop-filter: blur(20px);
+    }
+    
+    .modal-content {
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    }
+}
+
+/* Focus and Accessibility Improvements */
+.sidebar-toggle:focus,
+.nav-item:focus,
+.btn:focus {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+}
+
+/* Smooth scrolling for better UX */
+html {
+    scroll-behavior: smooth;
+}
+
+.content-area {
+    scroll-behavior: smooth;
+}
+
+/* Print styles */
+@media print {
+    .sidebar {
+        display: none;
+    }
+    
+    .main-content {
+        width: 100%;
+        max-width: 100%;
+    }
+    
+    .main-header {
+        position: static;
+    }
+}
+
+/* Dark mode improvements for better contrast on different screens */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --shadow-xl: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        --border-color: #475569;
+        --bg-surface: #1e293b;
+    }
+}
+
+/* Reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}

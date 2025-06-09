@@ -35,9 +35,11 @@ class AdminDashboard {
         
         // Load initial data
         await this.loadDashboardData();
-        
-        // Setup event listeners
+          // Setup event listeners
         this.setupEventListeners();
+        
+        // Initialize window state detection
+        this.initWindowStateDetection();
         
         // Start refresh interval
         this.startAutoRefresh();
@@ -71,13 +73,23 @@ class AdminDashboard {
                 const tabName = item.dataset.tab;
                 this.switchTab(tabName);
             });
-        });
-
-        // Sidebar toggle for mobile
+        });        // Sidebar toggle for mobile and desktop
         const sidebarToggle = document.getElementById('sidebar-toggle');
         if (sidebarToggle) {
             sidebarToggle.addEventListener('click', () => {
-                document.querySelector('.sidebar').classList.toggle('collapsed');
+                const sidebar = document.querySelector('.sidebar');
+                
+                if (window.innerWidth <= 768) {
+                    // Mobile: Show/hide sidebar with overlay
+                    sidebar.classList.toggle('open');
+                    const overlay = document.querySelector('.mobile-overlay');
+                    if (overlay) {
+                        overlay.classList.toggle('active');
+                    }
+                } else {
+                    // Desktop: Collapse/expand sidebar
+                    sidebar.classList.toggle('collapsed');
+                }
             });
         }
     }
@@ -127,7 +139,115 @@ class AdminDashboard {
                 this.closeAllModals();
             }
         });
-    }      async checkAuth() {
+
+        // Handle window resize for responsive layout
+        window.addEventListener('resize', () => {
+            this.handleWindowResize();
+        });
+    }    handleWindowResize() {
+        // Add transitioning class for smooth animations
+        const appContainer = document.querySelector('.app-container');
+        appContainer.classList.add('layout-transitioning');
+        
+        // Debounce resize events for performance
+        clearTimeout(this.resizeTimeout);
+        this.resizeTimeout = setTimeout(() => {
+            // Detect window state changes
+            this.detectWindowState();
+            
+            // Force layout recalculation
+            this.forceLayoutRecalculation();
+            
+            // Ensure proper sidebar state on resize
+            const sidebar = document.querySelector('.sidebar');
+            const mainContent = document.querySelector('.main-content');
+            
+            if (window.innerWidth <= 768) {
+                // Mobile layout
+                sidebar.classList.add('mobile-layout');
+                mainContent.classList.add('mobile-layout');
+                this.createMobileOverlay();
+            } else {
+                // Desktop layout
+                sidebar.classList.remove('mobile-layout');
+                mainContent.classList.remove('mobile-layout');
+                this.removeMobileOverlay();
+            }
+            
+            // Update grid layout if in grid view
+            if (this.currentView === 'grid') {
+                this.adjustGridColumns();
+            }
+            
+            // Remove transitioning class after animation
+            setTimeout(() => {
+                appContainer.classList.remove('layout-transitioning');
+            }, 300);
+            
+            this.logActivity('🔄 Layout adjusted for window resize', 'system');
+        }, 150);
+    }
+
+    detectWindowState() {
+        const isMaximized = window.outerWidth === screen.availWidth && window.outerHeight === screen.availHeight;
+        const body = document.body;
+        
+        if (isMaximized) {
+            body.classList.add('window-maximized');
+        } else {
+            body.classList.remove('window-maximized');
+        }
+    }
+
+    createMobileOverlay() {
+        if (!document.querySelector('.mobile-overlay')) {
+            const overlay = document.createElement('div');
+            overlay.className = 'mobile-overlay';
+            overlay.addEventListener('click', () => {
+                this.closeMobileSidebar();
+            });
+            document.body.appendChild(overlay);
+        }
+    }
+
+    removeMobileOverlay() {
+        const overlay = document.querySelector('.mobile-overlay');
+        if (overlay) {
+            overlay.remove();
+        }
+    }
+
+    closeMobileSidebar() {
+        const sidebar = document.querySelector('.sidebar');
+        const overlay = document.querySelector('.mobile-overlay');
+        
+        sidebar.classList.remove('open');
+        if (overlay) {
+            overlay.classList.remove('active');
+        }
+    }
+
+    adjustGridColumns() {
+        const filesGrid = document.getElementById('files-grid');
+        if (!filesGrid) return;
+        
+        const containerWidth = filesGrid.clientWidth;
+        let columns;
+        
+        if (containerWidth < 600) {
+            columns = 2;
+        } else if (containerWidth < 900) {
+            columns = 3;
+        } else if (containerWidth < 1200) {
+            columns = 4;
+        } else if (containerWidth < 1600) {
+            columns = 5;
+        } else {
+            columns = 6;
+        }
+        
+        filesGrid.style.gridTemplateColumns = `repeat(${columns}, 1fr)`;
+    }    async checkAuth() {
         try {
             const response = await fetch(`${this.serverUrl}/files`, {
                 method: 'GET',
@@ -291,10 +411,10 @@ class AdminDashboard {
                         const img = entry.target;
                         const src = img.dataset.src;
                         if (src && !this.loadedThumbnails.has(src)) {
-                            img.src = src;
-                            img.classList.remove('lazy');
-                            this.loadedThumbnails.add(src);
-                            this.intersectionObserver.unobserve(img);
+                          img.src = src;
+                          img.classList.remove('lazy');
+                          this.loadedThumbnails.add(src);
+                          this.intersectionObserver.unobserve(img);
                         }
                     }
                 });
@@ -305,8 +425,6 @@ class AdminDashboard {
             }
         );
     }
-
-    // ...existing code...
 
     filterFiles() {
         this.filteredFiles = this.files.filter(file => {
@@ -553,7 +671,42 @@ class AdminDashboard {
         this.logActivity(`📄 Navigated to page ${page}`, 'navigation');
     }
 
-    // ...existing code...
+    // Force layout recalculation
+    forceLayoutRecalculation() {
+        const appContainer = document.querySelector('.app-container');
+        const sidebar = document.querySelector('.sidebar');
+        const mainContent = document.querySelector('.main-content');
+        
+        // Temporarily hide and show to force reflow
+        appContainer.style.display = 'none';
+        appContainer.offsetHeight; // Force reflow
+        appContainer.style.display = 'flex';
+        
+        // Trigger resize event to update layout
+        window.dispatchEvent(new Event('resize'));
+        
+        this.logActivity('🔧 Layout recalculation forced', 'system');
+    }
+
+    // Initialize window state detection
+    initWindowStateDetection() {
+        // Detect initial window state
+        this.detectWindowState();
+        
+        // Listen for window state changes
+        window.addEventListener('resize', () => {
+            this.detectWindowState();
+        });
+        
+        // Handle page visibility change
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) {
+                setTimeout(() => {
+                    this.forceLayoutRecalculation();
+                }, 100);
+            }
+        });
+    }
 }
 
 // Global Functions for HTML Integration

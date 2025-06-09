@@ -652,9 +652,23 @@ async def admin_login(request: Request):
 @app.get("/admin", response_class=HTMLResponse)
 async def admin_dashboard(request: Request):
     """Serve the admin dashboard - Admin access only"""
-    # In production, add proper admin authentication here
-    # For now, we'll serve the dashboard directly
+    # Serve the working admin interface with fixed UI interactions
+    return templates.TemplateResponse("admin_working.html", {"request": request})
+
+@app.get("/admin/enhanced", response_class=HTMLResponse)
+async def admin_enhanced_dashboard(request: Request):
+    """Serve the enhanced admin dashboard with advanced features"""
+    return templates.TemplateResponse("admin_enhanced.html", {"request": request})
+
+@app.get("/admin-original", response_class=HTMLResponse)
+async def admin_original_dashboard(request: Request):
+    """Serve the original admin dashboard (for comparison/debugging)"""
     return templates.TemplateResponse("admin.html", {"request": request})
+
+@app.get("/admin-comparison", response_class=HTMLResponse)
+async def admin_comparison(request: Request):
+    """Show comparison between broken and working admin interfaces"""
+    return templates.TemplateResponse("admin_comparison.html", {"request": request})
 
 @app.get("/admin/files")
 async def admin_get_files():
