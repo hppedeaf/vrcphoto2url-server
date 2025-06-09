@@ -41,9 +41,9 @@ if not exist "client\client_config.json" (
 echo Starting desktop client...
 echo.
 
-REM Change to the scripts directory where launch_client.py is located
+REM Change to the scripts directory where launch_client_safe.py is located
 cd /d "%~dp0"
-python launch_client.py
+python launch_client_safe.py
 
 echo.
 pause

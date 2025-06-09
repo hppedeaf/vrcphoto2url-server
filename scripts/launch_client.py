@@ -98,6 +98,29 @@ def launch_client():
         traceback.print_exc()
         return 1
 
+def is_console_available():
+    """Check if we have a proper console available"""
+    try:
+        return sys.stdin and sys.stdin.isatty()
+    except (AttributeError, OSError):
+        return False
+
+def safe_input(prompt="Press Enter to continue...", timeout=5):
+    """Safe input that won't crash if stdin is unavailable"""
+    try:
+        if is_console_available():
+            return input(prompt)
+        else:
+            print(f"No console available. Waiting {timeout} seconds...")
+            import time
+            time.sleep(timeout)
+            return ""
+    except (EOFError, KeyboardInterrupt, OSError):
+        print(f"Input interrupted. Waiting {timeout} seconds...")
+        import time
+        time.sleep(timeout)
+        return ""
+
 if __name__ == "__main__":
     print("🎮 VRCPhoto2URL - VRChat Screenshot Auto-Uploader")
     print("🌐 Server: Railway.app Production")
@@ -109,6 +132,6 @@ if __name__ == "__main__":
         print("\n👋 Client closed successfully")
     else:
         print(f"\n💥 Client exited with error code: {exit_code}")
-        input("Press Enter to continue...")
+        safe_input("Press Enter to continue...")
     
     sys.exit(exit_code)

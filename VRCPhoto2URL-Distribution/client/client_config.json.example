@@ -1,0 +1,10 @@
+{
+  "server_url": "https://your-app.railway.app",
+  "api_key": "your-api-key-here",
+  "auto_upload": true,
+  "vrchat_mode": true,
+  "remember_connection": true,
+  "upload_timeout": 30,
+  "retry_attempts": 3,
+  "check_interval": 2
+}

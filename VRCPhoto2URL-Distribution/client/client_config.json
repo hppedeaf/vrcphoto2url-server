@@ -1,0 +1,10 @@
+{
+  "server_url": "https://vrcphoto2url-server-production.up.railway.app",
+  "api_key": "pjfR_FzOiqgmFOxxW9cfomsw7kOrDhgMv60vtBcG_GI",
+  "auto_upload": true,
+  "vrchat_mode": true,
+  "remember_connection": true,
+  "upload_timeout": 30,
+  "retry_attempts": 3,
+  "check_interval": 2
+}

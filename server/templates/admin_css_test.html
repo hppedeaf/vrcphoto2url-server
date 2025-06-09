@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin CSS Test - VRCPhoto2URL</title>
+    <link rel="stylesheet" href="../static/css/admin.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <span>VRCPhoto2URL</span>
+                </div>
+                <button class="sidebar-toggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <ul>
+                    <li class="nav-item active" data-tab="overview">
+                        <i class="fas fa-tachometer-alt"></i>
+                        <span>Overview</span>
+                    </li>
+                    <li class="nav-item" data-tab="files">
+                        <i class="fas fa-folder"></i>
+                        <span>File Manager</span>
+                    </li>
+                    <li class="nav-item" data-tab="analytics">
+                        <i class="fas fa-chart-bar"></i>
+                        <span>Analytics</span>
+                    </li>
+                </ul>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <div class="server-status">
+                    <div class="status-indicator online"></div>
+                    <span>Server Online</span>
+                </div>
+                <button class="logout-btn">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="main-header">
+                <div class="header-left">
+                    <h1>Dashboard Overview</h1>
+                    <div class="breadcrumb">
+                        <span>Admin</span>
+                        <i class="fas fa-chevron-right"></i>
+                        <span>Overview</span>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <button class="refresh-btn">
+                        <i class="fas fa-sync"></i>
+                        <span>Refresh</span>
+                    </button>
+                    <div class="user-info">
+                        <div class="user-avatar">A</div>
+                        <span>Admin</span>
+                    </div>
+                </div>
+            </header>
+            
+            <div class="content-area">
+                <div class="tab-panel active" id="overview-tab">
+                    <!-- Quick Actions -->
+                    <section class="quick-actions">
+                        <h3><i class="fas fa-bolt"></i> Quick Actions</h3>
+                        <div class="action-grid">
+                            <div class="action-btn">
+                                <div class="action-icon">
+                                    <i class="fas fa-upload"></i>
+                                </div>
+                                <span>Upload Files</span>
+                            </div>
+                            <div class="action-btn">
+                                <div class="action-icon">
+                                    <i class="fas fa-folder-plus"></i>
+                                </div>
+                                <span>New Folder</span>
+                            </div>
+                            <div class="action-btn">
+                                <div class="action-icon">
+                                    <i class="fas fa-cog"></i>
+                                </div>
+                                <span>Settings</span>
+                            </div>
+                            <div class="action-btn">
+                                <div class="action-icon">
+                                    <i class="fas fa-chart-bar"></i>
+                                </div>
+                                <span>Analytics</span>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Statistics Grid -->
+                    <section class="stats-section">
+                        <h3><i class="fas fa-chart-line"></i> Server Statistics</h3>
+                        <div class="stats-grid">
+                            <div class="stat-card primary">
+                                <div class="stat-icon">
+                                    <i class="fas fa-file"></i>
+                                </div>
+                                <div class="stat-content">
+                                    <div class="stat-value">150</div>
+                                    <div class="stat-label">Total Files</div>
+                                </div>
+                            </div>
+                            <div class="stat-card secondary">
+                                <div class="stat-icon">
+                                    <i class="fas fa-hdd"></i>
+                                </div>
+                                <div class="stat-content">
+                                    <div class="stat-value">2.4GB</div>
+                                    <div class="stat-label">Storage Used</div>
+                                </div>
+                            </div>
+                            <div class="stat-card success">
+                                <div class="stat-icon">
+                                    <i class="fas fa-upload"></i>
+                                </div>
+                                <div class="stat-content">
+                                    <div class="stat-value">45</div>
+                                    <div class="stat-label">Uploads Today</div>
+                                </div>
+                            </div>
+                            <div class="stat-card warning">
+                                <div class="stat-icon">
+                                    <i class="fas fa-users"></i>
+                                </div>
+                                <div class="stat-content">
+                                    <div class="stat-value">8</div>
+                                    <div class="stat-label">Active Users</div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Activity Log -->
+                    <section class="activity-section">
+                        <h3><i class="fas fa-history"></i> Recent Activity</h3>
+                        <div id="activity-log">
+                            <div id="activity-list">
+                                <div class="activity-item">
+                                    <div class="activity-icon">
+                                        <i class="fas fa-upload"></i>
+                                    </div>
+                                    <div class="activity-content">
+                                        <div class="activity-description">File uploaded: image.jpg</div>
+                                        <div class="activity-time">2 minutes ago</div>
+                                    </div>
+                                </div>
+                                <div class="activity-item">
+                                    <div class="activity-icon">
+                                        <i class="fas fa-trash"></i>
+                                    </div>
+                                    <div class="activity-content">
+                                        <div class="activity-description">File deleted: old_video.mp4</div>
+                                        <div class="activity-time">5 minutes ago</div>
+                                    </div>
+                                </div>
+                                <div class="activity-item">
+                                    <div class="activity-icon">
+                                        <i class="fas fa-user"></i>
+                                    </div>
+                                    <div class="activity-content">
+                                        <div class="activity-description">User login: admin</div>
+                                        <div class="activity-time">10 minutes ago</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Test JavaScript functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🎨 CSS Test Page Loaded');
+            console.log('✅ All layout classes should now be styled correctly');
+            
+            // Test button clicks
+            document.querySelectorAll('.action-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    console.log('🔘 Action button clicked:', this.textContent.trim());
+                });
+            });
+            
+            // Test nav items
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    console.log('📋 Nav item clicked:', this.textContent.trim());
+                });
+            });
+        });
+    </script>
+</body>
+</html>
