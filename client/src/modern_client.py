@@ -145,13 +145,20 @@ class UploadWorker(QThread):
                     self.upload_failed.emit(filename, "Upload failed - no URL in response")
                 
                 time.sleep(0.5)  # Rate limiting
-                
-            except Exception as e:
+                  except Exception as e:
                 # Import ServerError to handle server-specific errors
                 try:
                     from .server_client import ServerError
                 except ImportError:
-                    from server_client import ServerError
+                    try:
+                        from server_client import ServerError
+                    except ImportError:
+                        import sys
+                        import os
+                        current_dir = os.path.dirname(os.path.abspath(__file__))
+                        if current_dir not in sys.path:
+                            sys.path.insert(0, current_dir)
+                        from server_client import ServerError
                 
                 if upload_item:
                     filename = upload_item['filename']
@@ -896,13 +903,21 @@ class ModernCustomClient(QMainWindow):
         
         self.log_activity("🔌 Disconnected from server")
         self.statusBar().showMessage("Disconnected")
-        
-    def show_connection_dialog(self):
+          def show_connection_dialog(self):
         """Show connection configuration dialog"""
         try:
             from .connection_dialog import ConnectionDialog
         except ImportError:
-            from connection_dialog import ConnectionDialog
+            try:
+                from connection_dialog import ConnectionDialog
+            except ImportError:
+                import sys
+                import os
+                # Add current directory to path for import resolution
+                current_dir = os.path.dirname(os.path.abspath(__file__))
+                if current_dir not in sys.path:
+                    sys.path.insert(0, current_dir)
+                from connection_dialog import ConnectionDialog
         
         dialog = ConnectionDialog(self)
         if dialog.exec() == QDialog.Accepted:

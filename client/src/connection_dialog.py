@@ -13,11 +13,20 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt, QThread, Signal
 from PySide6.QtGui import QFont, QPixmap
 
+# Robust import handling for all execution scenarios
 try:
     from .server_client import ServerManager, ServerError
 except ImportError:
-    # Handle both relative and absolute imports
-    from server_client import ServerManager, ServerError
+    try:
+        from server_client import ServerManager, ServerError
+    except ImportError:
+        import sys
+        import os
+        # Add current directory to path if not already there
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        if current_dir not in sys.path:
+            sys.path.insert(0, current_dir)
+        from server_client import ServerManager, ServerError
 
 class ConnectionTestWorker(QThread):
     """Worker thread for testing connection"""

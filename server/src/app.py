@@ -129,10 +129,22 @@ app.add_middleware(
 )
 
 # Security
-security = HTTPBearer()
+security = HTTPBearer(auto_error=False)
 
 def verify_api_key(credentials: HTTPAuthorizationCredentials = Depends(security)):
-    """Verify API key"""
+    """Verify API key - optional in development mode"""
+    # If no API key is provided and we're in development mode, allow access
+    if credentials is None:
+        # Check if we're in development mode (localhost)
+        if "localhost" in Config.get_base_url() or "127.0.0.1" in Config.get_base_url():
+            return True
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="API key required for production access"
+            )
+    
+    # If API key is provided, verify it
     if credentials.credentials != Config.API_KEY:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
