@@ -137,7 +137,8 @@ class UploadWorker(QThread):
                 # Try to upload the file
                 result = self.server_manager.upload_file(filepath)
                 
-                # Check if upload was successful                if result and 'url' in result:
+                # Check if upload was successful
+                if result and 'url' in result:
                     self.upload_progress.emit(f"Completed {filename}", 100)
                     self.upload_complete.emit(filename, "Custom Server", result['url'], file_size)
                 else:
@@ -366,7 +367,7 @@ class ModernCustomClient(QMainWindow):
                 font-size: 13px;
                 line-height: 1.5;            }}
         """)
-      def apply_saved_theme_colors(self, primary_color=None, accent_color=None):
+    def apply_saved_theme_colors(self, primary_color=None, accent_color=None):
         """Apply saved theme colors to the application"""
         if primary_color or accent_color:
             try:
@@ -895,7 +896,8 @@ class ModernCustomClient(QMainWindow):
         
         self.log_activity("🔌 Disconnected from server")
         self.statusBar().showMessage("Disconnected")
-      def show_connection_dialog(self):
+        
+    def show_connection_dialog(self):
         """Show connection configuration dialog"""
         try:
             from .connection_dialog import ConnectionDialog

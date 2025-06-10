@@ -102,7 +102,7 @@ exe = EXE(
 
 def build_executable():
     """Build the executable using PyInstaller"""
-    print("🔨 Building VRCPhoto2URL Desktop executable...")
+    print("🔨 Building VRCPhoto2URL Desktop executable (directory mode)...")
     
     result = subprocess.run([
         sys.executable, "-m", "PyInstaller",
@@ -113,19 +113,30 @@ def build_executable():
     if result.returncode == 0:
         print("✅ Executable created successfully!")
         
-        # Get file size
-        exe_path = Path("dist/VRCPhoto2URL-Desktop.exe")
+        # Check for directory-based build
+        dist_dir = Path("dist/VRCPhoto2URL-Desktop")
+        exe_path = dist_dir / "VRCPhoto2URL-Desktop.exe"
+        
         if exe_path.exists():
-            size_mb = exe_path.stat().st_size / (1024 * 1024)
-            print(f"📁 Location: {exe_path.absolute()}")
-            print(f"📊 Size: {size_mb:.1f} MB")
+            size_mb = sum(f.stat().st_size for f in dist_dir.rglob('*') if f.is_file()) / (1024 * 1024)
+            print(f"📁 Location: {dist_dir.absolute()}")
+            print(f"📊 Total Size: {size_mb:.1f} MB")
+            print(f"🎯 Executable: {exe_path.absolute()}")
             
-            # Copy to root dist folder
+            # Copy the entire distribution folder to root
             root_dist = Path("../dist")
             root_dist.mkdir(exist_ok=True)
-            dest_path = root_dist / "VRCPhoto2URL-Desktop.exe"
-            shutil.copy2(exe_path, dest_path)
-            print(f"✅ Copied executable to: {dest_path.absolute()}")
+            dest_dir = root_dist / "VRCPhoto2URL-Desktop"
+            
+            # Remove existing directory if it exists
+            if dest_dir.exists():
+                import shutil
+                shutil.rmtree(dest_dir)
+            
+            # Copy the distribution folder
+            shutil.copytree(dist_dir, dest_dir)
+            print(f"✅ Copied distribution to: {dest_dir.absolute()}")
+            print(f"🚀 Run: {dest_dir / 'VRCPhoto2URL-Desktop.exe'}")
         else:
             print("❌ Executable file not found!")
             return False
@@ -157,13 +168,13 @@ def main():
     # Build executable
     if not build_executable():
         return False
-    
-    print("=" * 50)
+      print("=" * 50)
     print("✅ Build completed successfully!")
     print("\n📋 Next steps:")
-    print("1. Test the executable: dist/VRCPhoto2URL-Desktop.exe")
-    print("2. Share the executable with users")
-    print("3. No Python installation required on target systems")
+    print("1. Test the application: dist/VRCPhoto2URL-Desktop/VRCPhoto2URL-Desktop.exe")
+    print("2. Distribute the entire 'VRCPhoto2URL-Desktop' folder to users")
+    print("3. Users can run VRCPhoto2URL-Desktop.exe from the distributed folder")
+    print("4. No Python installation required on target systems")
     
     return True
 
