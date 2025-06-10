@@ -52,86 +52,135 @@ class ConnectionDialog(QDialog):
     def setup_ui(self):
         """Setup dialog UI"""
         self.setWindowTitle("🔗 Connect to Server")
-        self.setFixedSize(500, 400)
+        self.setMinimumSize(500, 400)  # Set minimum size instead of fixed
+        self.resize(600, 480)  # Set initial size but allow resizing
         self.setModal(True)
         
-        # Apply modern styling
+        # Apply modern styling with web interface theme
         self.setStyleSheet("""
             QDialog {
-                background-color: #1a1a1a;
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 rgb(15, 15, 35), stop:1 rgb(26, 26, 46));
                 color: #ffffff;
-                font-family: 'Segoe UI', Arial, sans-serif;
+                font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+                font-weight: 400;
             }
             QGroupBox {
-                font-weight: bold;
-                border: 2px solid #404040;
-                border-radius: 8px;
-                margin-top: 15px;
-                padding-top: 10px;
-                background-color: #2d2d2d;
+                font-weight: 600;
+                border: none;
+                border-radius: 12px;
+                margin-top: 20px;
+                padding-top: 15px;
+                background: rgba(45, 55, 72, 0.3);
+                backdrop-filter: blur(8px);
+                font-size: 14px;
             }
             QGroupBox::title {
                 subcontrol-origin: margin;
-                left: 10px;
-                padding: 0 10px 0 10px;
-                color: #4CAF50;
+                left: 15px;
+                padding: 0 15px 0 15px;
+                color: rgb(102, 126, 234);
+                font-weight: 600;
             }
             QLineEdit {
-                padding: 8px;
-                border: 2px solid #404040;
-                border-radius: 6px;
-                background-color: #2d2d2d;
+                padding: 12px 15px;
+                border: none;
+                border-radius: 8px;
+                background: rgba(30, 41, 59, 0.7);
                 color: #ffffff;
-                font-size: 12px;
+                font-size: 13px;
+                font-weight: 400;
+                min-height: 16px;
             }
             QLineEdit:focus {
-                border-color: #4CAF50;
+                background: rgba(30, 41, 59, 0.9);
+                outline: 2px solid rgb(102, 126, 234);
             }
             QPushButton {
-                padding: 10px 20px;
+                padding: 12px 24px;
                 border: none;
-                border-radius: 6px;
-                font-weight: bold;
-                font-size: 12px;
+                border-radius: 8px;
+                font-weight: 500;
+                font-size: 13px;
+                min-height: 16px;
+                font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
             }
             QPushButton[class="primary"] {
-                background-color: #4CAF50;
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                    stop:0 rgb(102, 126, 234), stop:1 rgb(118, 75, 162));
                 color: white;
+                font-weight: 600;
             }
             QPushButton[class="primary"]:hover {
-                background-color: #45a049;
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                    stop:0 rgb(112, 136, 244), stop:1 rgb(128, 85, 172));
+                transform: translateY(-1px);
+            }
+            QPushButton[class="primary"]:pressed {
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                    stop:0 rgb(92, 116, 224), stop:1 rgb(108, 65, 152));
+                transform: translateY(0px);
             }
             QPushButton[class="secondary"] {
-                background-color: #404040;
-                color: white;
+                background: rgba(45, 55, 72, 0.7);
+                color: rgba(203, 213, 225, 0.9);
+                border: 1px solid rgba(102, 126, 234, 0.3);
             }
             QPushButton[class="secondary"]:hover {
-                background-color: #505050;
+                background: rgba(45, 55, 72, 0.9);
+                color: white;
+                border: 1px solid rgba(102, 126, 234, 0.6);
+                transform: translateY(-1px);
+            }
+            QPushButton[class="secondary"]:pressed {
+                background: rgba(35, 45, 62, 0.9);
+                transform: translateY(0px);
             }
             QCheckBox {
-                color: #ffffff;
-                font-size: 12px;
+                color: rgba(203, 213, 225, 0.9);
+                font-size: 13px;
+                font-weight: 400;
+                spacing: 8px;
             }
             QCheckBox::indicator {
-                width: 16px;
-                height: 16px;
-                border: 2px solid #404040;
-                border-radius: 3px;
-                background-color: #2d2d2d;
+                width: 18px;
+                height: 18px;
+                border: 2px solid rgba(102, 126, 234, 0.4);
+                border-radius: 4px;
+                background: rgba(30, 41, 59, 0.7);
             }
             QCheckBox::indicator:checked {
-                background-color: #4CAF50;
-                border-color: #4CAF50;
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                    stop:0 rgb(102, 126, 234), stop:1 rgb(118, 75, 162));
+                border: 2px solid rgb(102, 126, 234);
+            }
+            QCheckBox::indicator:hover {
+                border: 2px solid rgba(102, 126, 234, 0.7);
             }
             QLabel {
-                color: #ffffff;
-                font-size: 12px;
+                color: rgba(203, 213, 225, 0.9);
+                font-size: 13px;
+                font-weight: 400;
             }
-        """)
+            QProgressBar {
+                border: none;
+                border-radius: 6px;
+                background: rgba(30, 41, 59, 0.7);
+                text-align: center;
+                font-weight: 500;
+                font-size: 12px;
+                color: white;
+                height: 24px;
+            }
+            QProgressBar::chunk {
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                    stop:0 rgb(102, 126, 234), stop:1 rgb(118, 75, 162));
+                border-radius: 6px;
+            }        """)
         
         main_layout = QVBoxLayout(self)
-        main_layout.setContentsMargins(20, 20, 20, 20)
-        main_layout.setSpacing(20)
+        main_layout.setContentsMargins(25, 25, 25, 25)
+        main_layout.setSpacing(25)
         
         # Header
         self.create_header(main_layout)
@@ -141,8 +190,7 @@ class ConnectionDialog(QDialog):
         
         # Test section
         self.create_test_section(main_layout)
-        
-        # Buttons
+          # Buttons
         self.create_buttons(main_layout)
         
     def create_header(self, parent_layout):
@@ -150,12 +198,12 @@ class ConnectionDialog(QDialog):
         header_layout = QVBoxLayout()
         
         title_label = QLabel("🔗 Server Connection")
-        title_label.setFont(QFont("Segoe UI", 18, QFont.Bold))
-        title_label.setStyleSheet("color: #4CAF50; margin-bottom: 5px;")
+        title_label.setFont(QFont("Inter", 20, QFont.Bold))
+        title_label.setStyleSheet("color: rgb(102, 126, 234); margin-bottom: 8px; font-weight: 700;")
         
         subtitle_label = QLabel("Configure connection to your Custom Server File Manager")
-        subtitle_label.setFont(QFont("Segoe UI", 10))
-        subtitle_label.setStyleSheet("color: #aaaaaa;")
+        subtitle_label.setFont(QFont("Inter", 11, QFont.Normal))
+        subtitle_label.setStyleSheet("color: rgba(203, 213, 225, 0.8); font-weight: 400;")
         
         header_layout.addWidget(title_label)
         header_layout.addWidget(subtitle_label)
@@ -165,7 +213,7 @@ class ConnectionDialog(QDialog):
         # Separator
         separator = QFrame()
         separator.setFrameShape(QFrame.HLine)
-        separator.setStyleSheet("background-color: #404040; max-height: 1px;")
+        separator.setStyleSheet("background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 rgb(102, 126, 234), stop:1 rgb(118, 75, 162)); max-height: 2px; border: none; margin: 15px 0;")
         parent_layout.addWidget(separator)
     
     def create_connection_section(self, parent_layout):

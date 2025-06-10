@@ -10,6 +10,7 @@ import threading
 import time
 import json
 import requests
+import subprocess
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional
@@ -238,12 +239,13 @@ class ModernCustomClient(QMainWindow):
         # UI setup
         self.setup_modern_ui()
         self.load_settings()
-        
-        # Welcome
+          # Welcome
         self.show_welcome_message()
-        
-        # Try auto-connection after everything is set up
+          # Try auto-connection after everything is set up
         QTimer.singleShot(1000, self.try_auto_connection)  # 1 second delay
+        
+        # Try auto-monitoring after connection if enabled
+        QTimer.singleShot(2000, self.try_auto_monitoring)  # 2 second delay
         
     def setup_worker_connections(self):
         """Connect upload worker signals"""
@@ -252,12 +254,15 @@ class ModernCustomClient(QMainWindow):
         self.upload_worker.upload_progress.connect(self.on_upload_progress)
     
     def setup_modern_ui(self):
-        """Setup beautiful modern user interface"""
-        self.setWindowTitle("🏠 Custom Server File Manager - Client v2.0")
-        self.setMinimumSize(1300, 900)
-        self.resize(1400, 950)
+        """Setup beautiful modern user interface with proper scaling"""
+        self.setWindowTitle("🏠 VRCPhoto2URL - Desktop Client v2.0")
+        self.setMinimumSize(1400, 1000)
+        self.resize(1600, 1100)
         
-        # Apply modern theme
+        # Enable high DPI scaling
+        self.setAttribute(Qt.WA_TranslucentBackground, False)
+        
+        # Apply modern theme with proper scaling
         self.apply_modern_theme()
         
         # Central widget with modern layout
@@ -269,93 +274,119 @@ class ModernCustomClient(QMainWindow):
         
         # Create modern header
         self.create_modern_header(main_layout)
-        
-        # Create main content area
+          # Create main content area
         self.create_main_content(main_layout)
         
         # Create status bar
         self.create_status_bar()
         
     def apply_modern_theme(self):
-        """Apply modern dark theme"""
+        """Apply modern dark theme matching web interface"""
         palette = QPalette()
         
-        # Colors
-        dark_bg = QColor(26, 26, 26)  # #1a1a1a
-        medium_bg = QColor(45, 45, 45)  # #2d2d2d
-        light_bg = QColor(64, 64, 64)  # #404040
-        primary_color = QColor(76, 175, 80)  # #4CAF50
-        text_color = QColor(255, 255, 255)  # White
-        disabled_color = QColor(128, 128, 128)  # Gray
+        # Colors matching the web admin interface
+        primary_bg = QColor(15, 15, 35)      # --bg-primary: #0f0f23
+        secondary_bg = QColor(26, 26, 46)    # --bg-secondary: #1a1a2e  
+        surface_bg = QColor(30, 41, 59)      # --bg-surface: #1e293b
+        hover_bg = QColor(51, 65, 85)        # --bg-hover: #334155
+        primary_color = QColor(102, 126, 234) # --primary-color: #667eea
+        text_primary = QColor(255, 255, 255)  # --text-primary: #ffffff
+        text_secondary = QColor(203, 213, 225) # --text-secondary: #cbd5e1
+        text_muted = QColor(148, 163, 184)    # --text-muted: #94a3b8
+        border_color = QColor(51, 65, 85)     # --border-color: #334155
+        success_color = QColor(16, 185, 129)  # --success: #10b981
         
         # Set palette colors
-        palette.setColor(QPalette.Window, dark_bg)
-        palette.setColor(QPalette.WindowText, text_color)
-        palette.setColor(QPalette.Base, medium_bg)
-        palette.setColor(QPalette.AlternateBase, light_bg)
-        palette.setColor(QPalette.ToolTipBase, text_color)
-        palette.setColor(QPalette.ToolTipText, text_color)
-        palette.setColor(QPalette.Text, text_color)
-        palette.setColor(QPalette.Button, medium_bg)
-        palette.setColor(QPalette.ButtonText, text_color)
+        palette.setColor(QPalette.Window, primary_bg)
+        palette.setColor(QPalette.WindowText, text_primary)
+        palette.setColor(QPalette.Base, secondary_bg)
+        palette.setColor(QPalette.AlternateBase, surface_bg)
+        palette.setColor(QPalette.ToolTipBase, surface_bg)
+        palette.setColor(QPalette.ToolTipText, text_primary)
+        palette.setColor(QPalette.Text, text_primary)
+        palette.setColor(QPalette.Button, surface_bg)
+        palette.setColor(QPalette.ButtonText, text_primary)
         palette.setColor(QPalette.BrightText, QColor(255, 0, 0))
         palette.setColor(QPalette.Link, primary_color)
         palette.setColor(QPalette.Highlight, primary_color)
-        palette.setColor(QPalette.HighlightedText, QColor(0, 0, 0))
-        palette.setColor(QPalette.Disabled, QPalette.Text, disabled_color)
-        palette.setColor(QPalette.Disabled, QPalette.ButtonText, disabled_color)
+        palette.setColor(QPalette.HighlightedText, QColor(255, 255, 255))
+        palette.setColor(QPalette.Disabled, QPalette.Text, text_muted)
+        palette.setColor(QPalette.Disabled, QPalette.ButtonText, text_muted)
         
         self.setPalette(palette)
         
-        # Set global stylesheet
-        self.setStyleSheet("""
-            QMainWindow {
-                background-color: #1a1a1a;
-                color: #ffffff;
-                font-family: 'Segoe UI', Arial, sans-serif;
-            }
-            QWidget {
+        # Set global stylesheet matching web design
+        self.setStyleSheet(f"""
+            QMainWindow {{
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+                    stop:0 rgb(15, 15, 35), stop:1 rgb(26, 26, 46));
+                color: rgb(255, 255, 255);
+                font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+                font-size: 14px;
+            }}
+            QWidget {{
                 background-color: transparent;
-                color: #ffffff;
-            }
-            QFrame {
+                color: rgb(255, 255, 255);
+                font-size: 14px;
+            }}
+            QFrame {{
                 border: none;
-            }
+            }}
+            QLabel {{
+                font-size: 14px;
+                color: rgb(255, 255, 255);
+            }}
+            QTextEdit, QListWidget {{
+                font-size: 13px;
+                line-height: 1.5;            }}
         """)
     
     def create_modern_header(self, parent_layout):
-        """Create beautiful header with gradient and controls"""
+        """Create modern header matching web interface design"""
         header_frame = QFrame()
-        header_frame.setMinimumHeight(120)
-        header_frame.setMaximumHeight(120)
+        header_frame.setMinimumHeight(140)
+        header_frame.setMaximumHeight(140)
         header_frame.setStyleSheet("""
             QFrame {
                 background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
-                    stop:0 #4CAF50, stop:0.5 #2E7D32, stop:1 #1B5E20);
-                border-bottom: 3px solid #2E7D32;
+                    stop:0 rgb(102, 126, 234), stop:0.5 rgb(118, 75, 162), stop:1 rgb(102, 126, 234));
+                border-bottom: 2px solid rgb(51, 65, 85);
+                border-radius: 0px;
             }
         """)
         
         header_layout = QHBoxLayout(header_frame)
-        header_layout.setContentsMargins(30, 20, 30, 20)
+        header_layout.setContentsMargins(40, 25, 40, 25)
+        header_layout.setSpacing(30)
         
-        # Title section
+        # Title section with proper typography
         title_layout = QVBoxLayout()
         
-        title_label = QLabel("🏠 Custom Server File Manager")
-        title_label.setFont(QFont("Segoe UI", 24, QFont.Bold))
-        title_label.setStyleSheet("color: white; background: transparent;")
+        title_label = QLabel("🚀 VRCPhoto2URL")
+        title_label.setFont(QFont("Inter", 28, QFont.Bold))
+        title_label.setStyleSheet("""
+            color: white; 
+            background: transparent;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        """)
         
-        subtitle_label = QLabel("Upload files to your server • Auto-upload photos • Auto-resize • Share anywhere")
-        subtitle_label.setFont(QFont("Segoe UI", 11))
-        subtitle_label.setStyleSheet("color: rgba(255, 255, 255, 0.9); background: transparent;")
+        subtitle_label = QLabel("Desktop Client • Auto-upload VRChat screenshots • Share instantly")
+        subtitle_label.setFont(QFont("Inter", 13))
+        subtitle_label.setStyleSheet("""
+            color: rgba(255, 255, 255, 0.9); 
+            background: transparent;
+            font-weight: 400;
+            line-height: 1.5;
+        """)
         
         title_layout.addWidget(title_label)
         title_layout.addWidget(subtitle_label)
         title_layout.addStretch()
         
-        # Status section
+        # Status section with cards
         status_layout = QVBoxLayout()
+        status_layout.setSpacing(12)
         
         # Connection status
         self.connection_status = StatusIndicator("❌ Not Connected", "error")
@@ -367,8 +398,9 @@ class ModernCustomClient(QMainWindow):
         
         status_layout.addStretch()
         
-        # Controls section
+        # Controls section with modern buttons
         controls_layout = QHBoxLayout()
+        controls_layout.setSpacing(15)
         
         self.connect_btn = ActionButton("🔗 Connect", "primary")
         self.connect_btn.clicked.connect(self.toggle_connection)
@@ -377,17 +409,17 @@ class ModernCustomClient(QMainWindow):
         self.monitor_btn.clicked.connect(self.toggle_monitoring)
         self.monitor_btn.setEnabled(False)
         
-        self.settings_btn = ActionButton("⚙️ Settings", "secondary")
+        self.settings_btn = ActionButton("⚙️ Settings", "outline")
         self.settings_btn.clicked.connect(self.show_settings)
         
         controls_layout.addWidget(self.connect_btn)
         controls_layout.addWidget(self.monitor_btn)
         controls_layout.addWidget(self.settings_btn)
         
-        # Add to header
-        header_layout.addLayout(title_layout, 3)
-        header_layout.addLayout(status_layout, 1)
-        header_layout.addLayout(controls_layout, 2)
+        # Add to header with proper proportions
+        header_layout.addLayout(title_layout, 4)
+        header_layout.addLayout(status_layout, 2)
+        header_layout.addLayout(controls_layout, 3)
         
         parent_layout.addWidget(header_frame)
     
@@ -401,18 +433,47 @@ class ModernCustomClient(QMainWindow):
         
         # Right panel - Activity
         self.create_activity_panel(content_splitter)
-        
-        # Set splitter proportions
+          # Set splitter proportions
         content_splitter.setSizes([600, 700])
-        
         parent_layout.addWidget(content_splitter)
     
     def create_upload_panel(self, parent):
-        """Create upload panel with drag-drop and controls"""
+        """Create upload panel with drag-drop and controls with scroll area"""
         upload_widget = QWidget()
         upload_layout = QVBoxLayout(upload_widget)
         upload_layout.setContentsMargins(20, 20, 20, 20)
         upload_layout.setSpacing(20)
+        
+        # Create scroll area for upload content
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        scroll_area.setFrameShape(QFrame.NoFrame)
+        scroll_area.setStyleSheet("""
+            QScrollArea {
+                border: none;
+                background: transparent;
+            }
+            QScrollBar:vertical {
+                background: rgba(51, 65, 85, 0.3);
+                width: 8px;
+                border-radius: 4px;
+            }
+            QScrollBar::handle:vertical {
+                background: rgba(102, 126, 234, 0.6);
+                border-radius: 4px;
+                min-height: 20px;
+            }
+            QScrollBar::handle:vertical:hover {
+                background: rgba(102, 126, 234, 0.8);
+            }
+        """)
+        
+        # Content widget for scroll area
+        scroll_content = QWidget()
+        scroll_layout = QVBoxLayout(scroll_content)
+        scroll_layout.setSpacing(20)
         
         # Upload card
         upload_card = ModernCard("📤 Upload Files", "")
@@ -428,26 +489,61 @@ class ModernCustomClient(QMainWindow):
         browse_btn = ActionButton("📁 Browse Files", "primary")
         browse_btn.clicked.connect(self.browse_files)
         
+        controls_layout.addWidget(browse_btn)
+        controls_layout.addStretch()
+        
+        upload_card.add_content(controls_layout)
+        
+        # Add folder management section to upload card
+        folder_management = QHBoxLayout()
+        
         add_folder_btn = ActionButton("📂 Add Folder to Monitor", "secondary")
         add_folder_btn.clicked.connect(self.add_folder_to_monitor)
         self.add_folder_btn = add_folder_btn
         add_folder_btn.setEnabled(False)
         
-        controls_layout.addWidget(browse_btn)
-        controls_layout.addWidget(add_folder_btn)
-        controls_layout.addStretch()
+        manage_folders_btn = ActionButton("📋 Manage Folders", "outline")
+        manage_folders_btn.clicked.connect(self.show_folder_manager)
+        self.manage_folders_btn = manage_folders_btn
+        manage_folders_btn.setEnabled(False)
         
-        upload_card.add_content(controls_layout)
+        folder_management.addWidget(add_folder_btn)
+        folder_management.addWidget(manage_folders_btn)
+        folder_management.addStretch()
         
-        # Progress section
-        self.progress_card = ModernCard("⏳ Upload Progress", "")
+        upload_card.add_content(folder_management)
+          # Monitored folders display
+        self.monitored_folders_card = ModernCard("📁 Monitored Folders", "")
+        self.monitored_folders_list = QLabel("No folders monitored")
+        self.monitored_folders_list.setStyleSheet("""
+            QLabel {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 rgba(15, 15, 35, 0.8), stop:1 rgba(26, 26, 46, 0.8));
+                border: 1px solid rgb(51, 65, 85);
+                border-radius: 12px;
+                padding: 20px;
+                color: rgba(203, 213, 225, 0.9);
+                font-family: 'Inter', sans-serif;
+                font-size: 13px;
+                line-height: 1.6;
+                font-weight: 400;
+            }
+        """)
+        self.monitored_folders_card.add_content(self.monitored_folders_list)
+        
+        # Progress card for uploads
+        self.progress_card = ModernCard("📈 Upload Progress", "")
         self.progress_bar = ModernProgressBar()
         self.progress_card.add_content(self.progress_bar)
-        self.progress_card.hide()
+        self.progress_card.hide()  # Hidden by default
         
-        upload_layout.addWidget(upload_card)
-        upload_layout.addWidget(self.progress_card)
-        upload_layout.addStretch()
+        scroll_layout.addWidget(upload_card)
+        scroll_layout.addWidget(self.monitored_folders_card)
+        scroll_layout.addWidget(self.progress_card)
+        scroll_layout.addStretch()
+        
+        scroll_area.setWidget(scroll_content)
+        upload_layout.addWidget(scroll_area)
         
         parent.addWidget(upload_widget)
     
@@ -457,103 +553,175 @@ class ModernCustomClient(QMainWindow):
         activity_layout = QVBoxLayout(activity_widget)
         activity_layout.setContentsMargins(20, 20, 20, 20)
         activity_layout.setSpacing(20)
-        
-        # Create tab widget
+          # Create tab widget with web-matching styling
         self.tab_widget = QTabWidget()
         self.tab_widget.setStyleSheet("""
             QTabWidget::pane {
-                border: 2px solid #404040;
-                border-radius: 8px;
-                background-color: #2d2d2d;
+                border: 1px solid rgb(51, 65, 85);
+                border-radius: 12px;
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 rgba(15, 15, 35, 0.8), stop:1 rgba(26, 26, 46, 0.8));
+                backdrop-filter: blur(10px);
             }
             QTabBar::tab {
-                background-color: #404040;
-                color: #ffffff;
-                padding: 12px 20px;
-                margin-right: 2px;
-                border-top-left-radius: 8px;
-                border-top-right-radius: 8px;
-                font-weight: bold;
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 rgba(51, 65, 85, 0.8), stop:1 rgba(30, 41, 59, 0.8));
+                color: rgba(203, 213, 225, 0.9);
+                padding: 16px 24px;
+                margin-right: 4px;
+                border-top-left-radius: 12px;
+                border-top-right-radius: 12px;
+                font-family: 'Inter', sans-serif;
+                font-weight: 500;
+                font-size: 14px;
+                min-width: 120px;
             }
             QTabBar::tab:selected {
-                background-color: #4CAF50;
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 rgb(102, 126, 234), stop:1 rgb(118, 75, 162));
                 color: white;
+                font-weight: 600;
             }
             QTabBar::tab:hover {
-                background-color: #505050;
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 rgba(71, 85, 105, 0.9), stop:1 rgba(45, 55, 72, 0.9));
+                color: white;
             }
         """)
         
         # Activity log tab
         self.create_activity_tab()
         
-        # Files tab
-        self.create_files_tab()
-        
+        # Files tab        self.create_files_tab()
         # Statistics tab
         self.create_statistics_tab()
         
         activity_layout.addWidget(self.tab_widget)
-        
         parent.addWidget(activity_widget)
     
     def create_activity_tab(self):
-        """Create activity log tab"""
+        """Create activity log tab with scroll area"""
         activity_widget = QWidget()
         activity_layout = QVBoxLayout(activity_widget)
         activity_layout.setContentsMargins(20, 20, 20, 20)
         
+        # Create scroll area for activity log
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        scroll_area.setFrameShape(QFrame.NoFrame)
+        
         self.activity_log = QTextEdit()
         self.activity_log.setReadOnly(True)
-        self.activity_log.setFont(QFont("Consolas", 10))
+        self.activity_log.setFont(QFont("Inter", 12))
         self.activity_log.setStyleSheet("""
             QTextEdit {
-                background-color: #1a1a1a;
-                border: 1px solid #404040;
-                border-radius: 8px;
-                padding: 10px;
-                color: #ffffff;
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 rgba(15, 15, 35, 0.9), stop:1 rgba(26, 26, 46, 0.9));
+                border: 1px solid rgb(51, 65, 85);
+                border-radius: 12px;
+                padding: 20px;
+                color: rgb(255, 255, 255);
+                font-family: 'Inter', sans-serif;
+                font-size: 13px;
+                line-height: 1.6;
             }
-        """)
+            QScrollBar:vertical {
+                background: rgba(51, 65, 85, 0.3);
+                width: 8px;
+                border-radius: 4px;
+            }
+            QScrollBar::handle:vertical {
+                background: rgba(102, 126, 234, 0.6);
+                border-radius: 4px;
+                min-height: 20px;
+            }
+            QScrollBar::handle:vertical:hover {
+        background: rgba(102, 126, 234, 0.8);
+            }        """)
         
-        activity_layout.addWidget(self.activity_log)
-        
+        scroll_area.setWidget(self.activity_log)
+        activity_layout.addWidget(scroll_area)
         self.tab_widget.addTab(activity_widget, "📋 Activity")
     
     def create_files_tab(self):
-        """Create recent files tab"""
+        """Create recent files tab with scroll area"""
         files_widget = QWidget()
         files_layout = QVBoxLayout(files_widget)
         files_layout.setContentsMargins(20, 20, 20, 20)
         
+        # Create scroll area for files list
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        scroll_area.setFrameShape(QFrame.NoFrame)
+        
         self.files_list = QListWidget()
         self.files_list.setStyleSheet("""
             QListWidget {
-                background-color: #1a1a1a;
-                border: 1px solid #404040;
-                border-radius: 8px;
-                padding: 10px;
-                color: #ffffff;
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 rgba(15, 15, 35, 0.9), stop:1 rgba(26, 26, 46, 0.9));
+                border: 1px solid rgb(51, 65, 85);
+                border-radius: 12px;
+                padding: 15px;
+                color: rgb(255, 255, 255);
+                font-family: 'Inter', sans-serif;
+                font-size: 13px;
             }
             QListWidget::item {
-                padding: 8px;
-                border-bottom: 1px solid #404040;
+                padding: 12px 16px;
+                border-bottom: 1px solid rgba(51, 65, 85, 0.3);
+                border-radius: 8px;
+                margin-bottom: 4px;
+                background: rgba(51, 65, 85, 0.1);
             }
             QListWidget::item:selected {
-                background-color: #4CAF50;
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                    stop:0 rgba(102, 126, 234, 0.3), stop:1 rgba(118, 75, 162, 0.3));
+                border: 1px solid rgba(102, 126, 234, 0.5);
             }
+            QListWidget::item:hover {
+                background: rgba(51, 65, 85, 0.2);
+                border-bottom: 1px solid rgba(102, 126, 234, 0.4);
+            }
+            QScrollBar:vertical {
+                background: rgba(51, 65, 85, 0.3);
+                width: 8px;
+                border-radius: 4px;
+            }
+            QScrollBar::handle:vertical {
+                background: rgba(102, 126, 234, 0.6);
+                border-radius: 4px;
+                min-height: 20px;
+            }
+            QScrollBar::handle:vertical:hover {
+                background: rgba(102, 126, 234, 0.8);        }
         """)
         
-        files_layout.addWidget(self.files_list)
-        
+        scroll_area.setWidget(self.files_list)
+        files_layout.addWidget(scroll_area)
         self.tab_widget.addTab(files_widget, "📁 Files")
     
     def create_statistics_tab(self):
-        """Create statistics tab"""
+        """Create statistics tab with scroll area"""
         stats_widget = QWidget()
         stats_layout = QVBoxLayout(stats_widget)
         stats_layout.setContentsMargins(20, 20, 20, 20)
         stats_layout.setSpacing(20)
+        
+        # Create scroll area for statistics
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        scroll_area.setFrameShape(QFrame.NoFrame)
+        
+        # Content widget for scroll area
+        scroll_content = QWidget()
+        scroll_layout = QVBoxLayout(scroll_content)
+        scroll_layout.setSpacing(20)
         
         # Stats grid
         stats_grid = QGridLayout()
@@ -576,21 +744,30 @@ class ModernCustomClient(QMainWindow):
         stats_grid.addWidget(self.success_rate_card, 1, 0)
         stats_grid.addWidget(self.avg_speed_card, 1, 1)
         
-        stats_layout.addLayout(stats_grid)
-        stats_layout.addStretch()
+        scroll_layout.addLayout(stats_grid)
+        scroll_layout.addStretch()
+        
+        scroll_area.setWidget(scroll_content)
+        stats_layout.addWidget(scroll_area)
         
         self.tab_widget.addTab(stats_widget, "📊 Statistics")
     
     def create_status_bar(self):
-        """Create modern status bar"""
+        """Create modern status bar matching web interface"""
         status_bar = self.statusBar()
         status_bar.setStyleSheet("""
             QStatusBar {
-                background-color: #2d2d2d;
-                border-top: 1px solid #404040;
-                color: #ffffff;
-                font-size: 11px;
-                padding: 5px;
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                    stop:0 rgba(51, 65, 85, 0.9), stop:1 rgba(30, 41, 59, 0.9));
+                border-top: 1px solid rgb(51, 65, 85);
+                color: rgba(203, 213, 225, 0.9);
+                font-family: 'Inter', sans-serif;
+                font-size: 12px;
+                font-weight: 500;
+                padding: 8px 20px;
+                height: 32px;
+            }            QStatusBar::item {
+                border: none;
             }
         """)
         
@@ -618,12 +795,12 @@ class ModernCustomClient(QMainWindow):
                 self.connect_btn.setStyleType("danger")
                 self.monitor_btn.setEnabled(True)
                 self.add_folder_btn.setEnabled(True)
+                self.manage_folders_btn.setEnabled(bool(self.monitored_directories))
                 
                 self.log_activity("✅ Connected to server successfully")
                 self.statusBar().showMessage(f"Connected to {server_url}")
             else:
                 self.show_connection_dialog()
-                
         except Exception as e:
             self.log_activity(f"❌ Connection failed: {str(e)}")
             self.show_connection_dialog()
@@ -639,6 +816,7 @@ class ModernCustomClient(QMainWindow):
         self.connect_btn.setStyleType("primary")
         self.monitor_btn.setEnabled(False)
         self.add_folder_btn.setEnabled(False)
+        self.manage_folders_btn.setEnabled(False)
         
         # Stop monitoring if active
         if self.monitoring:
@@ -649,7 +827,7 @@ class ModernCustomClient(QMainWindow):
     
     def show_connection_dialog(self):
         """Show connection configuration dialog"""
-        from .connection_dialog import ConnectionDialog
+        from connection_dialog import ConnectionDialog
         
         dialog = ConnectionDialog(self)
         if dialog.exec() == QDialog.Accepted:
@@ -665,6 +843,7 @@ class ModernCustomClient(QMainWindow):
                 self.connect_btn.setStyleType("danger")
                 self.monitor_btn.setEnabled(True)
                 self.add_folder_btn.setEnabled(True)
+                self.manage_folders_btn.setEnabled(bool(self.monitored_directories))
                 
                 self.log_activity("✅ Connected to server successfully")
                 self.statusBar().showMessage(f"Connected to {settings['server_url']}")
@@ -723,63 +902,476 @@ class ModernCustomClient(QMainWindow):
         self.log_activity("⏹️ Stopped folder monitoring")
     
     def add_folder_to_monitor(self):
-        """Add folder to monitoring list"""
-        folder = QFileDialog.getExistingDirectory(self, "Select Folder to Monitor")
+        """Add folder to monitoring list with VRChat auto-detection"""
+        # First try to auto-detect VRChat folder
+        vrchat_folder = self.detect_vrchat_folder()
+        if vrchat_folder and vrchat_folder not in self.monitored_directories:
+            reply = QMessageBox.question(
+                self, 
+                "VRChat Folder Detected", 
+                f"🎮 VRChat Screenshots folder detected:\n\n{vrchat_folder}\n\nWould you like to monitor this folder for automatic uploads?",
+                QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel
+            )
+            
+            if reply == QMessageBox.Yes:
+                self.monitored_directories.append(vrchat_folder)
+                self.save_setting('monitored_directories', self.monitored_directories)
+                self.log_activity(f"📸 Added VRChat folder to monitor: {vrchat_folder}")
+                
+                # Restart monitoring if active
+                if self.monitoring:
+                    self.stop_monitoring()
+                    self.start_monitoring()
+                return
+            elif reply == QMessageBox.Cancel:
+                return
+        
+        # Manual folder selection
+        folder = QFileDialog.getExistingDirectory(
+            self, 
+            "Select Folder to Monitor",
+            str(Path.home() / "Pictures"),  # Default to Pictures folder
+            QFileDialog.ShowDirsOnly | QFileDialog.DontResolveSymlinks
+        )
         
         if folder and folder not in self.monitored_directories:
             self.monitored_directories.append(folder)
+            self.save_setting('monitored_directories', self.monitored_directories)
             self.log_activity(f"📂 Added folder to monitor: {folder}")
             
-            # Restart monitoring if active
+            # Check if this looks like a VRChat folder
+            if self.is_vrchat_screenshots_folder(Path(folder)):
+                self.log_activity("🎮 This folder appears to contain VRChat screenshots!")
+              # Restart monitoring if active
             if self.monitoring:
                 self.stop_monitoring()
                 self.start_monitoring()
+        elif folder in self.monitored_directories:
+            QMessageBox.information(self, "Already Monitoring", f"Folder is already being monitored:\n{folder}")
+        
+        # Update the monitored folders display
+        self.update_monitored_folders_display()
+    
+    def show_folder_manager(self):
+        """Show folder manager dialog for removing/managing monitored folders"""
+        if not self.monitored_directories:
+            QMessageBox.information(self, "No Folders", "No folders are currently being monitored.")
+            return
+        
+        # Create folder manager dialog
+        dialog = QDialog(self)
+        dialog.setWindowTitle("📁 Manage Monitored Folders")
+        dialog.setFixedSize(500, 400)
+        dialog.setStyleSheet("""
+            QDialog {
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+                    stop:0 rgb(15, 15, 35), stop:1 rgb(26, 26, 46));
+                color: rgb(255, 255, 255);
+                font-family: 'Inter', sans-serif;
+            }
+            QListWidget {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 rgba(15, 15, 35, 0.9), stop:1 rgba(26, 26, 46, 0.9));
+                border: 1px solid rgb(51, 65, 85);
+                border-radius: 12px;
+                padding: 12px;
+                font-family: 'Inter', sans-serif;
+                font-size: 12px;
+            }
+            QListWidget::item {
+                padding: 12px;
+                border-bottom: 1px solid rgba(51, 65, 85, 0.3);
+                border-radius: 8px;
+                margin-bottom: 4px;
+                background: rgba(51, 65, 85, 0.1);
+            }
+            QListWidget::item:selected {
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                    stop:0 rgba(102, 126, 234, 0.3), stop:1 rgba(118, 75, 162, 0.3));
+                border: 1px solid rgba(102, 126, 234, 0.5);
+                color: white;
+            }
+            QPushButton {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 rgba(51, 65, 85, 0.8), stop:1 rgba(30, 41, 59, 0.8));
+                border: 1px solid rgb(51, 65, 85);
+                border-radius: 8px;
+                padding: 12px 20px;
+                font-family: 'Inter', sans-serif;
+                font-weight: 500;
+                font-size: 13px;
+                color: rgba(203, 213, 225, 0.9);
+                min-width: 100px;
+            }
+            QPushButton:hover {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 rgba(71, 85, 105, 0.9), stop:1 rgba(45, 55, 72, 0.9));
+                color: white;
+            }
+            QPushButton:pressed {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 rgba(30, 41, 59, 0.9), stop:1 rgba(15, 23, 42, 0.9));
+            }
+            QPushButton.danger {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 rgba(220, 53, 69, 0.8), stop:1 rgba(200, 35, 51, 0.8));
+                border-color: rgba(220, 53, 69, 0.6);
+                color: white;
+            }
+            QPushButton.danger:hover {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 rgba(200, 35, 51, 0.9), stop:1 rgba(164, 29, 42, 0.9));
+            }
+            QLabel {
+                font-family: 'Inter', sans-serif;
+                font-size: 16px;
+                font-weight: 600;
+                color: white;
+            }
+        """)
+        
+        layout = QVBoxLayout(dialog)
+          # Title
+        title_label = QLabel("📁 Monitored Folders")
+        title_label.setStyleSheet("""
+            font-family: 'Inter', sans-serif;
+            font-size: 18px; 
+            font-weight: 700; 
+            color: white; 
+            margin-bottom: 15px;
+            letter-spacing: -0.3px;
+        """)
+        layout.addWidget(title_label)
+        
+        # Folders list
+        folders_list = QListWidget()
+        for folder in self.monitored_directories:
+            folders_list.addItem(folder)
+        layout.addWidget(folders_list)
+        
+        # Buttons
+        button_layout = QHBoxLayout()
+        
+        remove_btn = QPushButton("🗑️ Remove Selected")
+        remove_btn.setProperty("class", "danger")
+        remove_btn.setStyleSheet("QPushButton { background-color: #dc3545; border-color: #dc3545; }")
+        
+        open_btn = QPushButton("📂 Open Folder")
+        refresh_btn = QPushButton("🔄 Refresh")
+        close_btn = QPushButton("✅ Close")
+        
+        button_layout.addWidget(remove_btn)
+        button_layout.addWidget(open_btn)
+        button_layout.addWidget(refresh_btn)
+        button_layout.addStretch()
+        button_layout.addWidget(close_btn)
+        
+        layout.addLayout(button_layout)
+        
+        # Button connections
+        def remove_selected():
+            current_item = folders_list.currentItem()
+            if current_item:
+                folder_path = current_item.text()
+                reply = QMessageBox.question(
+                    dialog,
+                    "Remove Folder",
+                    f"Stop monitoring this folder?\n\n{folder_path}",
+                    QMessageBox.Yes | QMessageBox.No
+                )
+                if reply == QMessageBox.Yes:
+                    self.monitored_directories.remove(folder_path)
+                    self.save_setting('monitored_directories', self.monitored_directories)
+                    folders_list.takeItem(folders_list.currentRow())
+                    self.log_activity(f"🗑️ Removed folder from monitoring: {folder_path}")
+                    
+                    # Restart monitoring if active
+                    if self.monitoring:
+                        self.stop_monitoring()
+                        if self.monitored_directories:  # Only restart if there are folders left
+                            self.start_monitoring()
+                    
+                    # Update display
+                    self.update_monitored_folders_display()
+                      # Close dialog if no folders left
+                    if not self.monitored_directories:
+                        QMessageBox.information(dialog, "All Folders Removed", "No folders are being monitored anymore.")
+                        dialog.accept()
+            else:
+                QMessageBox.information(dialog, "No Selection", "Please select a folder to remove.")
+        
+        def open_selected():
+            current_item = folders_list.currentItem()
+            if current_item:
+                folder_path = current_item.text()
+                if Path(folder_path).exists():
+                    import subprocess
+                    subprocess.Popen(f'explorer "{folder_path}"')
+                else:
+                    QMessageBox.warning(dialog, "Folder Not Found", f"Folder no longer exists:\n{folder_path}")
+            else:
+                QMessageBox.information(dialog, "No Selection", "Please select a folder to open.")
+        
+        def refresh_list():
+            # Remove non-existent folders
+            existing_folders = [f for f in self.monitored_directories if Path(f).exists()]
+            if len(existing_folders) != len(self.monitored_directories):
+                removed_count = len(self.monitored_directories) - len(existing_folders)
+                self.monitored_directories = existing_folders
+                self.save_setting('monitored_directories', self.monitored_directories)
+                
+                # Refresh the list widget
+                folders_list.clear()
+                for folder in self.monitored_directories:
+                    folders_list.addItem(folder)
+                
+                self.update_monitored_folders_display()
+                QMessageBox.information(dialog, "Folders Refreshed", f"Removed {removed_count} non-existent folders.")
+                
+                if not self.monitored_directories:
+                    dialog.accept()
+            else:
+                QMessageBox.information(dialog, "All Good", "All monitored folders still exist.")
+        
+        remove_btn.clicked.connect(remove_selected)
+        open_btn.clicked.connect(open_selected)
+        refresh_btn.clicked.connect(refresh_list)
+        close_btn.clicked.connect(dialog.accept)
+        
+        dialog.exec()
+    
+    def update_monitored_folders_display(self):
+        """Update the monitored folders display in the UI"""
+        if not self.monitored_directories:
+            self.monitored_folders_list.setText("No folders monitored")
+        else:
+            # Create a nicely formatted list
+            folder_text = ""
+            for i, folder in enumerate(self.monitored_directories):
+                folder_name = Path(folder).name
+                if len(folder) > 50:
+                    # Truncate long paths
+                    display_path = f"...{folder[-45:]}"
+                else:
+                    display_path = folder
+                
+                folder_text += f"<b>{i+1}. {folder_name}</b><br>{display_path}<br><br>"            
+            self.monitored_folders_list.setText(f"<html>{folder_text}</html>")
+        
+        # Update manage folders button state
+        self.manage_folders_btn.setEnabled(bool(self.monitored_directories) and self.connected)
+    
+    def log_activity(self, message: str):
+        """Log activity message with timestamp"""
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        formatted_message = f"<font color='#4CAF50'>[{timestamp}] {message}</font>"
+        
+        # Append to activity log
+        self.activity_log.append(formatted_message)
+        
+        # Auto-scroll to bottom
+        self.activity_log.verticalScrollBar().setValue(self.activity_log.verticalScrollBar().maximum())
     
     def browse_files(self):
-        """Browse and select files to upload"""
+        """Open file dialog to select files for upload"""
         files, _ = QFileDialog.getOpenFileNames(
             self, 
             "Select Files to Upload",
-            "",
-            "All Files (*.*);;"
-            "Images (*.jpg *.jpeg *.png *.gif *.bmp *.webp *.tiff *.tif);;"
-            "Videos (*.mp4 *.avi *.mov *.wmv *.flv *.mkv *.m4v);;"
-            "Audio (*.mp3 *.wav *.flac *.aac *.ogg *.wma);;"
-            "Documents (*.pdf *.txt *.doc *.docx);;"
-            "Archives (*.zip *.rar *.7z)"
+            str(Path.home()),
+            "All Files (*);;Images (*.jpg *.jpeg *.png *.gif *.bmp *.webp *.tiff *.tif);;Videos (*.mp4 *.avi *.mov *.wmv *.flv *.mkv *.m4v);;Audio (*.mp3 *.wav *.flac *.aac *.ogg *.wma);;Documents (*.pdf *.txt *.doc *.docx);;Archives (*.zip *.rar *.7z)"
         )
         
         if files:
-            self.handle_files_dropped(files)
+            for file in files:
+                self.upload_worker.add_upload(file)
+            
+            self.log_activity(f"📤 Added {len(files)} files to upload queue")
     
-    def handle_files_dropped(self, files):
-        """Handle dropped files"""
-        if not self.connected:
-            QMessageBox.warning(self, "Not Connected", 
-                              "Please connect to server first.")
+    def handle_files_dropped(self, files: List[str]):
+        """Handle files dropped onto the application window"""
+        if not files:
             return
         
-        self.log_activity(f"📤 Queuing {len(files)} files for upload")
+        # Add to upload worker
+        for file in files:
+            self.upload_worker.add_upload(file)
         
-        for filepath in files:
-            self.upload_worker.add_upload(filepath)
-        
-        if not self.upload_worker.isRunning():
-            self.upload_worker.start()
-        
-        self.progress_card.show()
+        self.log_activity(f"📥 Added {len(files)} files to upload queue from drop")
     
-    def handle_auto_upload(self, filepath):
-        """Handle automatic upload from monitoring"""
-        if self.connected and self.get_setting('auto_upload_enabled', True):
-            self.log_activity(f"🔍 Auto-uploading: {os.path.basename(filepath)}")
-            self.upload_worker.add_upload(filepath)
-            
-            if not self.upload_worker.isRunning():
-                self.upload_worker.start()
-            
-            self.progress_card.show()
+    def handle_auto_upload(self, filepath: str):
+        """Handle automatic upload of newly created/moved files"""
+        if not self.connected:
+            self.log_activity("❌ Cannot upload, not connected to server")
+            return
+          # Add to upload worker
+        self.upload_worker.add_upload(filepath)
+        self.log_activity(f"📤 Auto-uploading file: {filepath}")
     
+    def detect_vrchat_folder(self) -> Optional[str]:
+        """Auto-detect VRChat screenshots folder"""
+        possible_paths = [
+            Path.home() / "Pictures" / "VRChat",
+            Path.home() / "Documents" / "VRChat",
+            Path("C:/Users") / os.getlogin() / "Pictures" / "VRChat",
+            Path("D:/VRChat/Screenshots"),
+            Path("E:/VRChat/Screenshots")
+        ]
+        
+        for path in possible_paths:
+            if path.exists() and path.is_dir():
+                # Check if it looks like a VRChat screenshots folder
+                if self.is_vrchat_screenshots_folder(path):
+                    return str(path)
+        
+        return None
+    
+    def is_vrchat_screenshots_folder(self, path: Path) -> bool:
+        """Check if a folder looks like a VRChat screenshots folder"""
+        try:
+            if not path.exists() or not path.is_dir():
+                return False
+            
+            # Check for VRChat in folder name
+            if "vrchat" in path.name.lower():
+                return True
+            
+            # Check for VRChat screenshot filename patterns
+            files = list(path.glob("*.png"))
+            vrchat_files = [f for f in files if "VRChat_" in f.name or "vrchat" in f.name.lower()]
+            
+            # If folder has VRChat-pattern files, consider it a VRChat folder
+            if vrchat_files:
+                return True
+                
+            # Check if folder has recent PNG files (potential screenshots)
+            return len(files) > 0
+            
+        except Exception:
+            return False
+    
+    def load_settings(self):
+        """Load settings from file with VRChat auto-detection and monitored directories restoration"""
+        try:
+            # Load from user's home directory
+            config_file = Path.home() / ".custom_server_client" / "config.json"
+            if config_file.exists():
+                with open(config_file, 'r') as f:
+                    self._settings = json.load(f)
+            else:
+                self._settings = {}
+            
+            # Restore monitored directories from settings
+            saved_directories = self._settings.get('monitored_directories', [])
+            if saved_directories:
+                # Verify directories still exist
+                valid_directories = []
+                for directory in saved_directories:
+                    if Path(directory).exists():
+                        valid_directories.append(directory)
+                    else:
+                        self.log_activity(f"📂 Removed non-existent folder: {directory}")
+                
+                self.monitored_directories = valid_directories
+                
+                # Update settings if directories were removed
+                if len(valid_directories) != len(saved_directories):
+                    self.save_setting('monitored_directories', valid_directories)
+                
+                self.log_activity(f"📂 Restored {len(valid_directories)} monitored folders from settings")
+            else:
+                # First launch or no saved directories - try auto-detecting VRChat folder
+                vrchat_folder = self.detect_vrchat_folder()
+                if vrchat_folder:
+                    self.monitored_directories = [vrchat_folder]
+                    self.save_setting('monitored_directories', self.monitored_directories)
+                    self.log_activity(f"🎮 Auto-detected and added VRChat folder: {vrchat_folder}")
+                else:
+                    self.monitored_directories = []
+              # Update the folders display
+            QTimer.singleShot(500, self.update_monitored_folders_display)
+            
+        except Exception as e:
+            self.log_activity(f"⚠️ Failed to load settings: {str(e)}")
+            self._settings = {}
+            self.monitored_directories = []
+            
+            # Try VRChat auto-detection as fallback
+            try:
+                vrchat_folder = self.detect_vrchat_folder()
+                if vrchat_folder:
+                    self.monitored_directories = [vrchat_folder]
+                    self.save_setting('monitored_directories', self.monitored_directories)
+                    self.log_activity(f"🎮 Auto-detected VRChat folder on fallback: {vrchat_folder}")
+                QTimer.singleShot(500, self.update_monitored_folders_display)
+            except Exception:
+                pass
+    
+    def try_auto_connection(self):
+        """Try auto-connection after UI is set up"""
+        server_url = self.get_setting('server_url', '')
+        if server_url and not self.connected:
+            self.log_activity(f"🔄 Attempting auto-connection to {server_url}")
+            self.connect_to_server()
+    
+    def try_auto_monitoring(self):
+        """Try auto-monitoring if enabled in settings and connected"""
+        start_monitoring = self.get_setting('start_monitoring', False)
+        if start_monitoring and self.connected and self.monitored_directories and not self.monitoring:
+            self.log_activity("🔄 Auto-starting folder monitoring...")
+            self.start_monitoring()
+    
+    def save_settings(self):
+        """Save settings to file"""
+        try:
+            config_dir = Path.home() / ".custom_server_client"
+            config_dir.mkdir(exist_ok=True)
+            
+            config_file = config_dir / "config.json"
+            with open(config_file, 'w') as f:
+                json.dump(self._settings, f, indent=2)
+        except Exception:
+            pass
+    
+    def closeEvent(self, event):
+        """Handle application close"""
+        # Stop monitoring if active
+        if self.monitoring:
+            self.stop_monitoring()
+        
+        # Stop upload worker if running
+        if self.upload_worker.isRunning():
+            self.upload_worker.stop()
+            self.upload_worker.wait()
+          # Save settings
+        self.save_settings()
+        event.accept()
+
+    def get_setting(self, key, default=None):
+        """Get setting value"""
+        return getattr(self, '_settings', {}).get(key, default)
+    
+    def save_setting(self, key, value):
+        """Save setting value"""
+        if not hasattr(self, '_settings'):
+            self._settings = {}
+        self._settings[key] = value
+        self.save_settings()
+    
+    def show_welcome_message(self):
+        """Show welcome message in activity log"""
+        self.log_activity("🏠 Welcome to Custom Server File Manager!")
+        self.log_activity("📁 Connect to your server to start uploading files")
+        self.log_activity("🔍 Add folders to monitor for automatic uploads")
+    
+    def show_settings(self):
+        """Show settings dialog"""
+        dialog = SettingsDialog(self)
+        if dialog.exec() == QDialog.Accepted:
+            settings = dialog.get_settings()
+            for key, value in settings.items():
+                self.save_setting(key, value)
+            self.log_activity("⚙️ Settings updated")
+
     def on_upload_success(self, filename, service, url, size):
         """Handle successful upload"""
         self.upload_stats['total_uploads'] += 1
@@ -797,6 +1389,7 @@ class ModernCustomClient(QMainWindow):
         
         # Auto-copy to clipboard if enabled
         if self.get_setting('auto_clipboard', True):
+            from PySide6.QtWidgets import QApplication
             QApplication.clipboard().setText(url)
             self.log_activity(f"📋 URL copied to clipboard")
         
@@ -828,155 +1421,20 @@ class ModernCustomClient(QMainWindow):
         """Update statistics display"""
         total = self.upload_stats['total_uploads']
         successful = self.upload_stats['successful_uploads']
+        failed = self.upload_stats['failed_uploads']
         size = self.upload_stats['total_size']
         
+        # Format file size
+        if size < 1024:
+            size_str = f"{size} B"
+        elif size < 1024 * 1024:
+            size_str = f"{size / 1024:.1f} KB"
+        else:
+            size_str = f"{size / (1024 * 1024):.1f} MB"
+          # Update status
         self.total_uploads_card.set_value(str(total))
-        self.total_size_card.set_value(self.format_file_size(size))
+        self.total_size_card.set_value(size_str)
         
-        if total > 0:
-            success_rate = (successful / total) * 100
-            self.success_rate_card.set_value(f"{success_rate:.1f}%")
-    
-    def format_file_size(self, size_bytes):
-        """Format file size in human readable format"""
-        if size_bytes == 0:
-            return "0 B"
-        
-        size_names = ["B", "KB", "MB", "GB", "TB"]
-        import math
-        i = int(math.floor(math.log(size_bytes, 1024)))
-        p = math.pow(1024, i)
-        s = round(size_bytes / p, 2)
-        return f"{s} {size_names[i]}"
-    
-    def show_settings(self):
-        """Show settings dialog"""
-        settings_dialog = SettingsDialog(self)
-        settings_dialog.exec()
-    
-    def log_activity(self, message):
-        """Log activity with timestamp"""
-        timestamp = datetime.now().strftime("%H:%M:%S")
-        self.activity_log.append(f"[{timestamp}] {message}")
-    
-    def show_welcome_message(self):
-        """Show welcome message"""
-        self.log_activity("🌟 Custom Server File Manager Client started")
-        self.log_activity("🔗 Click 'Connect' to connect to your server")
-    
-    def get_setting(self, key, default=None):
-        """Get setting value"""
-        settings = getattr(self, '_settings', {})
-        return settings.get(key, default)
-    
-    def save_setting(self, key, value):
-        """Save setting value"""
-        if not hasattr(self, '_settings'):
-            self._settings = {}
-        self._settings[key] = value
-    
-    def load_settings(self):
-        """Load settings from file"""
-        try:
-            # Load from user's home directory
-            config_file = Path.home() / ".custom_server_client" / "config.json"
-            if config_file.exists():
-                with open(config_file, 'r') as f:
-                    self._settings = json.load(f)
-            else:
-                self._settings = {}
-                    
-        except Exception as e:
-            self._settings = {}
-            print(f"Warning: Error loading settings: {str(e)}")
-    
-    def auto_connect_from_config(self, config):
-        """Automatically connect using config settings"""
-        try:
-            server_url = config.get('server_url', '')
-            api_key = config.get('api_key', '')
-            
-            if server_url:
-                self.log_activity(f"🔌 Auto-connecting to {server_url}...")
-                
-                if self.server_manager.connect(server_url, api_key):
-                    self.connected = True
-                    self.connection_status.update_status("✅ Connected", "success")
-                    self.connect_btn.setText("🔌 Disconnect")
-                    self.connect_btn.setStyleType("danger")
-                    self.monitor_btn.setEnabled(True)
-                    self.add_folder_btn.setEnabled(True)
-                    
-                    self.log_activity("✅ Auto-connection successful!")
-                    self.statusBar().showMessage(f"Connected to {server_url}")
-                    
-                    # Save successful connection settings
-                    self.save_setting('server_url', server_url)
-                    self.save_setting('api_key', api_key)
-                    
-                else:
-                    self.log_activity("❌ Auto-connection failed - server unreachable")
-                    
-        except Exception as e:
-            self.log_activity(f"❌ Auto-connection error: {str(e)}")
-    
-    def try_auto_connection(self):
-        """Try to auto-connect from local config file if not already connected"""
-        if self.connected:
-            return
-            
-        try:
-            local_config_file = Path(__file__).parent.parent / "client_config.json"
-            if local_config_file.exists():
-                with open(local_config_file, 'r') as f:
-                    local_config = json.load(f)
-                
-                if (local_config.get('server_url') and 
-                    local_config.get('remember_connection', True)):
-                    
-                    self.log_activity(f"🔍 Found local config file: {local_config_file}")
-                    self.auto_connect_from_config(local_config)
-                    
-        except Exception as e:
-            self.log_activity(f"⚠️ Error in auto-connection: {str(e)}")
-    
-    def save_settings(self):
-        """Save settings to file"""
-        try:
-            config_dir = Path.home() / ".custom_server_client"
-            config_dir.mkdir(exist_ok=True)
-            
-            config_file = config_dir / "config.json"
-            with open(config_file, 'w') as f:
-                json.dump(self._settings, f, indent=2)
-        except Exception:
-            pass
-    
-    def closeEvent(self, event):
-        """Handle application close"""
-        if self.monitoring:
-            self.stop_monitoring()
-        
-        if self.upload_worker.isRunning():
-            self.upload_worker.stop()
-            self.upload_worker.wait()
-        
-        self.save_settings()
-        event.accept()
-
-def main():
-    """Main entry point"""
-    app = QApplication(sys.argv)
-    
-    # Set application properties
-    app.setApplicationName("Custom Server File Manager")
-    app.setApplicationVersion("2.0")
-    app.setOrganizationName("Custom Server")
-    
-    window = ModernCustomClient()
-    window.show()
-    
-    sys.exit(app.exec())
-
-if __name__ == "__main__":
-    main()
+        # Calculate success rate
+        success_rate = 100 if total == 0 else (successful / total) * 100
+        self.success_rate_card.set_value(f"{success_rate:.1f}%")

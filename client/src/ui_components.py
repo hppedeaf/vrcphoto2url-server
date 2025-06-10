@@ -35,8 +35,7 @@ class ModernCard(QGroupBox):
         self.main_layout = QVBoxLayout(self)
         self.main_layout.setContentsMargins(20, 25, 20, 20)
         self.main_layout.setSpacing(15)
-        
-        # Create content container
+          # Create content container
         self.content_widget = QWidget()
         self.content_layout = QVBoxLayout(self.content_widget)
         self.content_layout.setContentsMargins(0, 0, 0, 0)
@@ -45,32 +44,38 @@ class ModernCard(QGroupBox):
         self.main_layout.addWidget(self.content_widget)
         
     def apply_styling(self):
-        """Apply modern card styling"""
+        """Apply modern card styling matching web interface"""
         self.setStyleSheet("""
             QGroupBox {
                 font-weight: 600;
-                font-size: 14px;
+                font-size: 16px;
                 color: #ffffff;
-                border: 2px solid #404040;
+                border: 1px solid rgb(51, 65, 85);
                 border-radius: 12px;
-                margin-top: 15px;
-                padding-top: 20px;
-                background-color: #2d2d2d;
+                margin-top: 20px;
+                padding-top: 25px;
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 rgba(30, 41, 59, 0.8), stop:1 rgba(26, 26, 46, 0.8));
+                backdrop-filter: blur(10px);
             }
             QGroupBox::title {
                 subcontrol-origin: margin;
-                left: 15px;
-                padding: 5px 10px;
-                background-color: #2d2d2d;
-                color: #4CAF50;
-                font-weight: bold;
-                font-size: 16px;
+                left: 20px;
+                padding: 8px 15px;
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                    stop:0 rgb(102, 126, 234), stop:1 rgb(118, 75, 162));
+                color: #ffffff;
+                font-weight: 700;
+                font-size: 14px;
+                border-radius: 6px;
                 border: none;
             }
             QWidget {
                 background-color: transparent;
                 color: #ffffff;
-            }        """)
+                font-size: 14px;
+            }
+        """)
     
     def add_content(self, widget_or_layout):
         """Add content to the card"""
@@ -115,59 +120,72 @@ class ActionButton(QPushButton):
         self.style_type = style_type
         self.setup_button()
         self.apply_style()
-        
+    
     def setup_button(self):
-        """Setup button properties"""
-        self.setMinimumHeight(44)
-        self.setMinimumWidth(120)
-        self.setFont(QFont("Segoe UI", 13, QFont.Medium))
+        """Setup button properties with proper scaling"""
+        self.setMinimumHeight(48)
+        self.setMinimumWidth(140)
+        self.setFont(QFont("Inter", 14, QFont.Medium))
         self.setCursor(Qt.PointingHandCursor)
         
     def apply_style(self):
-        """Apply button styling based on type"""
+        """Apply button styling based on type matching web interface"""
         styles = {
             "primary": {
-                "background": "#4CAF50",
-                "hover": "#45a049",
+                "background": "qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 rgb(102, 126, 234), stop:1 rgb(118, 75, 162))",
+                "hover": "qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 rgb(124, 141, 240), stop:1 rgb(139, 95, 191))",
                 "text": "#ffffff"
             },
             "secondary": {
-                "background": "#404040", 
-                "hover": "#505050",
+                "background": "rgba(30, 41, 59, 0.8)", 
+                "hover": "rgba(51, 65, 85, 0.9)",
                 "text": "#ffffff"
             },
             "danger": {
-                "background": "#f44336",
-                "hover": "#da190b",
+                "background": "rgba(239, 68, 68, 0.9)",
+                "hover": "rgba(220, 38, 38, 1)",
                 "text": "#ffffff"
             },
             "success": {
-                "background": "#2E7D32",
-                "hover": "#1B5E20",
+                "background": "rgba(16, 185, 129, 0.9)",
+                "hover": "rgba(5, 150, 105, 1)",
                 "text": "#ffffff"
-            }        }
+            },
+            "outline": {
+                "background": "transparent",
+                "hover": "rgba(102, 126, 234, 0.1)",
+                "text": "rgb(102, 126, 234)",
+                "border": "2px solid rgb(102, 126, 234)"
+            }
+        }
         
         style = styles.get(self.style_type, styles["primary"])
+        border_style = f"border: {style.get('border', 'none')};"
         
         self.setStyleSheet(f"""
             QPushButton {{
-                background-color: {style["background"]};
+                background: {style["background"]};
                 color: {style["text"]};
-                border: none;
+                {border_style}
                 border-radius: 8px;
-                padding: 12px 20px;
-                font-weight: bold;
+                padding: 14px 24px;
+                font-weight: 600;
+                font-size: 14px;
                 text-align: center;
+                letter-spacing: 0.5px;
             }}
             QPushButton:hover {{
-                background-color: {style["hover"]};
+                background: {style["hover"]};
+                transform: translateY(-1px);
             }}
             QPushButton:pressed {{
-                background-color: {style["background"]};
+                background: {style["background"]};
+                transform: translateY(0px);
             }}
             QPushButton:disabled {{
-                background-color: #666666;
-                color: #999999;
+                background: rgba(148, 163, 184, 0.3);
+                color: rgba(148, 163, 184, 0.7);
+                border: none;
             }}
         """)
     
@@ -183,33 +201,36 @@ class StatusIndicator(QLabel):
         super().__init__(text, parent)
         self.status_type = status_type
         self.setup_indicator()
-        
+    
     def setup_indicator(self):
-        """Setup indicator styling"""
-        self.setFont(QFont("Segoe UI", 11, QFont.Medium))
+        """Setup indicator styling with proper fonts and sizing"""
+        self.setFont(QFont("Inter", 13, QFont.Medium))
         self.setAlignment(Qt.AlignCenter)
-        self.setMinimumHeight(30)
-        self.setMinimumWidth(150)
+        self.setMinimumHeight(36)
+        self.setMinimumWidth(180)
         self.update_style()
         
     def update_style(self):
-        """Update styling based on status type"""
+        """Update styling based on status type matching web colors"""
         colors = {
-            "success": {"bg": "#2E7D32", "text": "#ffffff"},
-            "error": {"bg": "#d32f2f", "text": "#ffffff"},
-            "warning": {"bg": "#f57c00", "text": "#ffffff"},
-            "info": {"bg": "#1976d2", "text": "#ffffff"}
+            "success": {"bg": "rgba(16, 185, 129, 0.9)", "text": "#ffffff", "border": "rgb(5, 150, 105)"},
+            "error": {"bg": "rgba(239, 68, 68, 0.9)", "text": "#ffffff", "border": "rgb(220, 38, 38)"},
+            "warning": {"bg": "rgba(245, 158, 11, 0.9)", "text": "#ffffff", "border": "rgb(217, 119, 6)"},
+            "info": {"bg": "rgba(59, 130, 246, 0.9)", "text": "#ffffff", "border": "rgb(37, 99, 235)"}
         }
         
         color = colors.get(self.status_type, colors["info"])
         
         self.setStyleSheet(f"""
             QLabel {{
-                background-color: {color["bg"]};
+                background: {color["bg"]};
                 color: {color["text"]};
-                border-radius: 6px;
-                padding: 6px 12px;
-                font-weight: bold;
+                border: 1px solid {color["border"]};
+                border-radius: 8px;
+                padding: 10px 16px;
+                font-weight: 600;
+                font-size: 13px;
+                letter-spacing: 0.3px;
             }}
         """)
     
@@ -228,33 +249,33 @@ class FileDropZone(QFrame):
         super().__init__(parent)
         self.setup_ui()
         self.setAcceptDrops(True)
-        
+    
     def setup_ui(self):
-        """Setup drop zone UI"""
-        self.setMinimumHeight(200)
+        """Setup drop zone UI with improved scaling"""
+        self.setMinimumHeight(240)
         self.setFrameStyle(QFrame.Box)
         
         layout = QVBoxLayout(self)
         layout.setAlignment(Qt.AlignCenter)
-        layout.setSpacing(15)
+        layout.setSpacing(20)
         
         # Icon
         icon_label = QLabel("📁")
-        icon_label.setFont(QFont("Segoe UI", 48))
+        icon_label.setFont(QFont("Segoe UI", 56))
         icon_label.setAlignment(Qt.AlignCenter)
-        icon_label.setStyleSheet("color: #4CAF50; background: transparent;")
+        icon_label.setStyleSheet("color: rgb(102, 126, 234); background: transparent;")
         
         # Main text
         main_text = QLabel("Drag photos here or click to browse")
-        main_text.setFont(QFont("Segoe UI", 16, QFont.Medium))
+        main_text.setFont(QFont("Inter", 18, QFont.Medium))
         main_text.setAlignment(Qt.AlignCenter)
-        main_text.setStyleSheet("color: #ffffff; background: transparent;")
+        main_text.setStyleSheet("color: #ffffff; background: transparent; font-weight: 500;")
         
         # Hint text
         hint_text = QLabel("Supports: JPG, PNG, GIF, WEBP, MP4, PDF and more")
-        hint_text.setFont(QFont("Segoe UI", 12))
+        hint_text.setFont(QFont("Inter", 14))
         hint_text.setAlignment(Qt.AlignCenter)
-        hint_text.setStyleSheet("color: #aaaaaa; background: transparent;")
+        hint_text.setStyleSheet("color: rgba(203, 213, 225, 0.8); background: transparent;")
         
         layout.addWidget(icon_label)
         layout.addWidget(main_text)
@@ -263,16 +284,18 @@ class FileDropZone(QFrame):
         self.apply_styling()
         
     def apply_styling(self):
-        """Apply drop zone styling"""
+        """Apply drop zone styling matching web interface"""
         self.setStyleSheet("""
             QFrame {
-                border: 3px dashed #4CAF50;
-                border-radius: 12px;
-                background-color: rgba(76, 175, 80, 0.1);
+                border: 3px dashed rgba(102, 126, 234, 0.6);
+                border-radius: 16px;
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 rgba(102, 126, 234, 0.05), stop:1 rgba(118, 75, 162, 0.05));
             }
             QFrame:hover {
-                background-color: rgba(76, 175, 80, 0.2);
-                border-color: #45a049;
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 rgba(102, 126, 234, 0.1), stop:1 rgba(118, 75, 162, 0.1));
+                border-color: rgba(102, 126, 234, 0.8);
             }
         """)
     

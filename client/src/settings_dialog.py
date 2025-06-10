@@ -10,7 +10,7 @@ from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QFormLayout,
     QLabel, QLineEdit, QPushButton, QCheckBox, QSpinBox,
     QFrame, QTabWidget, QWidget, QGroupBox, QComboBox,
-    QColorDialog, QGridLayout, QSlider, QMessageBox
+    QColorDialog, QGridLayout, QSlider, QMessageBox, QScrollArea
 )
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QFont, QColor
@@ -29,140 +29,203 @@ class SettingsDialog(QDialog):
     def setup_ui(self):
         """Setup dialog UI"""
         self.setWindowTitle("⚙️ Settings")
-        self.setFixedSize(600, 500)
+        self.setMinimumSize(700, 550)  # Set minimum size instead of fixed
+        self.resize(800, 650)  # Set initial size but allow resizing
         self.setModal(True)
         
-        # Apply modern styling
+        # Apply modern styling with web interface theme
         self.setStyleSheet("""
             QDialog {
-                background-color: #1a1a1a;
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 rgb(15, 15, 35), stop:1 rgb(26, 26, 46));
                 color: #ffffff;
-                font-family: 'Segoe UI', Arial, sans-serif;
+                font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+                font-weight: 400;
             }
             QTabWidget::pane {
-                border: 2px solid #404040;
-                border-radius: 8px;
-                background-color: #2d2d2d;
+                border: none;
+                border-radius: 12px;
+                background: rgba(45, 55, 72, 0.4);
+                backdrop-filter: blur(10px);
+                margin-top: 10px;
             }
             QTabBar::tab {
-                background-color: #404040;
-                color: #ffffff;
-                padding: 10px 15px;
-                margin-right: 2px;
-                border-top-left-radius: 6px;
-                border-top-right-radius: 6px;
-                font-weight: bold;
+                background: rgba(45, 55, 72, 0.6);
+                color: rgba(203, 213, 225, 0.9);
+                padding: 12px 20px;
+                margin-right: 4px;
+                border-top-left-radius: 8px;
+                border-top-right-radius: 8px;
+                font-weight: 500;
+                font-size: 13px;
+                min-width: 80px;
+                border: none;
             }
             QTabBar::tab:selected {
-                background-color: #4CAF50;
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                    stop:0 rgb(102, 126, 234), stop:1 rgb(118, 75, 162));
+                color: white;
+                font-weight: 600;
+            }
+            QTabBar::tab:hover:!selected {
+                background: rgba(102, 126, 234, 0.3);
                 color: white;
             }
-            QTabBar::tab:hover {
-                background-color: #505050;
-            }
             QGroupBox {
-                font-weight: bold;
-                border: 2px solid #404040;
-                border-radius: 8px;
-                margin-top: 15px;
-                padding-top: 10px;
-                background-color: #2d2d2d;
+                font-weight: 600;
+                border: none;
+                border-radius: 12px;
+                margin-top: 20px;
+                padding-top: 15px;
+                background: rgba(45, 55, 72, 0.3);
+                backdrop-filter: blur(8px);
+                font-size: 14px;
             }
             QGroupBox::title {
                 subcontrol-origin: margin;
-                left: 10px;
-                padding: 0 10px 0 10px;
-                color: #4CAF50;
+                left: 15px;
+                padding: 0 15px 0 15px;
+                color: rgb(102, 126, 234);
+                font-weight: 600;
             }
             QLineEdit, QSpinBox {
-                padding: 6px;
-                border: 2px solid #404040;
-                border-radius: 4px;
-                background-color: #2d2d2d;
+                padding: 10px 12px;
+                border: none;
+                border-radius: 8px;
+                background: rgba(30, 41, 59, 0.7);
                 color: #ffffff;
+                font-size: 13px;
+                font-weight: 400;
+                min-height: 16px;
             }
             QLineEdit:focus, QSpinBox:focus {
-                border-color: #4CAF50;
+                background: rgba(30, 41, 59, 0.9);
+                outline: 2px solid rgb(102, 126, 234);
             }
             QPushButton {
-                padding: 8px 16px;
+                padding: 12px 24px;
                 border: none;
-                border-radius: 4px;
-                font-weight: bold;
+                border-radius: 8px;
+                font-weight: 500;
+                font-size: 13px;
+                min-height: 16px;
+                font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
             }
             QPushButton[class="primary"] {
-                background-color: #4CAF50;
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                    stop:0 rgb(102, 126, 234), stop:1 rgb(118, 75, 162));
                 color: white;
+                font-weight: 600;
             }
             QPushButton[class="primary"]:hover {
-                background-color: #45a049;
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                    stop:0 rgb(112, 136, 244), stop:1 rgb(128, 85, 172));
+                transform: translateY(-1px);
+            }
+            QPushButton[class="primary"]:pressed {
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                    stop:0 rgb(92, 116, 224), stop:1 rgb(108, 65, 152));
+                transform: translateY(0px);
             }
             QPushButton[class="secondary"] {
-                background-color: #404040;
-                color: white;
+                background: rgba(45, 55, 72, 0.7);
+                color: rgba(203, 213, 225, 0.9);
+                border: 1px solid rgba(102, 126, 234, 0.3);
             }
             QPushButton[class="secondary"]:hover {
-                background-color: #505050;
+                background: rgba(45, 55, 72, 0.9);
+                color: white;
+                border: 1px solid rgba(102, 126, 234, 0.6);
+                transform: translateY(-1px);
+            }
+            QPushButton[class="secondary"]:pressed {
+                background: rgba(35, 45, 62, 0.9);
+                transform: translateY(0px);
             }
             QPushButton[class="preset"] {
-                min-width: 60px;
-                min-height: 30px;
-                border-radius: 15px;
-                font-weight: bold;
+                min-width: 80px;
+                min-height: 36px;
+                border-radius: 18px;
+                font-weight: 600;
+                font-size: 12px;
+                border: 2px solid transparent;
             }
             QCheckBox {
-                color: #ffffff;
+                color: rgba(203, 213, 225, 0.9);
+                font-size: 13px;
+                font-weight: 400;
+                spacing: 8px;
             }
             QCheckBox::indicator {
-                width: 16px;
-                height: 16px;
-                border: 2px solid #404040;
-                border-radius: 3px;
-                background-color: #2d2d2d;
+                width: 18px;
+                height: 18px;
+                border: 2px solid rgba(102, 126, 234, 0.4);
+                border-radius: 4px;
+                background: rgba(30, 41, 59, 0.7);
             }
             QCheckBox::indicator:checked {
-                background-color: #4CAF50;
-                border-color: #4CAF50;
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                    stop:0 rgb(102, 126, 234), stop:1 rgb(118, 75, 162));
+                border: 2px solid rgb(102, 126, 234);
+            }
+            QCheckBox::indicator:hover {
+                border: 2px solid rgba(102, 126, 234, 0.7);
             }
             QComboBox {
-                padding: 6px;
-                border: 2px solid #404040;
-                border-radius: 4px;
-                background-color: #2d2d2d;
+                padding: 10px 12px;
+                border: none;
+                border-radius: 8px;
+                background: rgba(30, 41, 59, 0.7);
                 color: #ffffff;
+                font-size: 13px;
+                min-height: 16px;
             }
             QComboBox:focus {
-                border-color: #4CAF50;
+                background: rgba(30, 41, 59, 0.9);
+                outline: 2px solid rgb(102, 126, 234);
             }
             QComboBox::drop-down {
                 border: none;
+                width: 20px;
             }
             QComboBox::down-arrow {
                 width: 12px;
                 height: 12px;
+                image: none;
+                border: none;
             }
             QSlider::groove:horizontal {
-                border: 1px solid #404040;
-                height: 6px;
-                background: #2d2d2d;
-                border-radius: 3px;
+                border: none;
+                height: 8px;
+                background: rgba(30, 41, 59, 0.7);
+                border-radius: 4px;
             }
             QSlider::handle:horizontal {
-                background: #4CAF50;
-                border: 1px solid #4CAF50;
-                width: 16px;
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                    stop:0 rgb(102, 126, 234), stop:1 rgb(118, 75, 162));
+                border: none;
+                width: 20px;
                 margin: -6px 0;
-                border-radius: 8px;
+                border-radius: 10px;
+            }
+            QSlider::handle:horizontal:hover {
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                    stop:0 rgb(112, 136, 244), stop:1 rgb(128, 85, 172));
             }
             QSlider::sub-page:horizontal {
-                background: #4CAF50;
-                border-radius: 3px;
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                    stop:0 rgb(102, 126, 234), stop:1 rgb(118, 75, 162));
+                border-radius: 4px;
             }
-        """)
+            QLabel {
+                color: rgba(203, 213, 225, 0.9);
+                font-size: 13px;
+                font-weight: 400;
+            }        """)
         
         main_layout = QVBoxLayout(self)
-        main_layout.setContentsMargins(20, 20, 20, 20)
-        main_layout.setSpacing(20)
+        main_layout.setContentsMargins(30, 30, 30, 30)
+        main_layout.setSpacing(25)
         
         # Header
         self.create_header(main_layout)
@@ -178,12 +241,12 @@ class SettingsDialog(QDialog):
         header_layout = QVBoxLayout()
         
         title_label = QLabel("⚙️ Settings")
-        title_label.setFont(QFont("Segoe UI", 18, QFont.Bold))
-        title_label.setStyleSheet("color: #4CAF50; margin-bottom: 5px;")
+        title_label.setFont(QFont("Inter", 24, QFont.Bold))
+        title_label.setStyleSheet("color: rgb(102, 126, 234); margin-bottom: 8px; font-weight: 700;")
         
         subtitle_label = QLabel("Customize your Custom Server File Manager Client")
-        subtitle_label.setFont(QFont("Segoe UI", 10))
-        subtitle_label.setStyleSheet("color: #aaaaaa;")
+        subtitle_label.setFont(QFont("Inter", 12, QFont.Normal))
+        subtitle_label.setStyleSheet("color: rgba(203, 213, 225, 0.8); font-weight: 400;")
         
         header_layout.addWidget(title_label)
         header_layout.addWidget(subtitle_label)
@@ -193,7 +256,7 @@ class SettingsDialog(QDialog):
         # Separator
         separator = QFrame()
         separator.setFrameShape(QFrame.HLine)
-        separator.setStyleSheet("background-color: #404040; max-height: 1px;")
+        separator.setStyleSheet("background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 rgb(102, 126, 234), stop:1 rgb(118, 75, 162)); max-height: 2px; border: none; margin: 15px 0;")
         parent_layout.addWidget(separator)
     
     def create_tabs(self, parent_layout):
@@ -205,23 +268,32 @@ class SettingsDialog(QDialog):
         
         # Upload tab
         self.create_upload_tab()
-        
-        # Theme tab
+          # Theme tab
         self.create_theme_tab()
         
         # Advanced tab
         self.create_advanced_tab()
-        
         parent_layout.addWidget(self.tab_widget)
     
     def create_general_tab(self):
-        """Create general settings tab"""
+        """Create general settings tab with scroll area"""
         general_widget = QWidget()
         general_layout = QVBoxLayout(general_widget)
-        general_layout.setContentsMargins(20, 20, 20, 20)
-        general_layout.setSpacing(20)
+        general_layout.setContentsMargins(0, 0, 0, 0)
         
-        # Auto Upload Group
+        # Create scroll area
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        scroll_area.setFrameShape(QFrame.NoFrame)
+        
+        # Content widget for scroll area
+        scroll_content = QWidget()
+        scroll_layout = QVBoxLayout(scroll_content)
+        scroll_layout.setContentsMargins(20, 20, 20, 20)
+        scroll_layout.setSpacing(20)
+          # Auto Upload Group
         auto_upload_group = QGroupBox("📤 Auto Upload Settings")
         auto_upload_layout = QVBoxLayout(auto_upload_group)
         auto_upload_layout.setSpacing(10)
@@ -252,18 +324,31 @@ class SettingsDialog(QDialog):
         startup_layout.addWidget(self.minimize_to_tray_checkbox)
         startup_layout.addWidget(self.start_monitoring_checkbox)
         
-        general_layout.addWidget(auto_upload_group)
-        general_layout.addWidget(startup_group)
-        general_layout.addStretch()
+        scroll_layout.addWidget(auto_upload_group)
+        scroll_layout.addWidget(startup_group)
+        scroll_layout.addStretch()
         
+        scroll_area.setWidget(scroll_content)
+        general_layout.addWidget(scroll_area)
         self.tab_widget.addTab(general_widget, "🏠 General")
     
     def create_upload_tab(self):
-        """Create upload settings tab"""
+        """Create upload settings tab with scroll area"""
         upload_widget = QWidget()
         upload_layout = QVBoxLayout(upload_widget)
-        upload_layout.setContentsMargins(20, 20, 20, 20)
-        upload_layout.setSpacing(20)
+        upload_layout.setContentsMargins(0, 0, 0, 0)
+          # Create scroll area
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        scroll_area.setFrameShape(QFrame.NoFrame)
+        
+        # Content widget for scroll area
+        scroll_content = QWidget()
+        scroll_layout = QVBoxLayout(scroll_content)
+        scroll_layout.setContentsMargins(20, 20, 20, 20)
+        scroll_layout.setSpacing(20)
         
         # Image Processing Group
         image_group = QGroupBox("🖼️ Image Processing")
@@ -315,45 +400,99 @@ class SettingsDialog(QDialog):
         types_layout.addWidget(self.documents_checkbox)
         types_layout.addWidget(self.archives_checkbox)
         
-        upload_layout.addWidget(image_group)
-        upload_layout.addWidget(types_group)
-        upload_layout.addStretch()
-        
+        scroll_layout.addWidget(image_group)
+        scroll_layout.addWidget(types_group)
+        scroll_layout.addStretch()
+        scroll_area.setWidget(scroll_content)
+        upload_layout.addWidget(scroll_area)
         self.tab_widget.addTab(upload_widget, "📤 Upload")
     
     def create_theme_tab(self):
-        """Create theme settings tab"""
+        """Create theme settings tab with scroll area"""
         theme_widget = QWidget()
         theme_layout = QVBoxLayout(theme_widget)
-        theme_layout.setContentsMargins(20, 20, 20, 20)
-        theme_layout.setSpacing(20)
+        theme_layout.setContentsMargins(0, 0, 0, 0)
         
-        # Color Presets Group
+        # Create scroll area
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        scroll_area.setFrameShape(QFrame.NoFrame)
+        
+        # Content widget for scroll area
+        scroll_content = QWidget()
+        scroll_layout = QVBoxLayout(scroll_content)
+        scroll_layout.setContentsMargins(20, 20, 20, 20)
+        scroll_layout.setSpacing(20)
+          # Color Presets Group
         presets_group = QGroupBox("🎨 Color Presets")
         presets_layout = QGridLayout(presets_group)
         presets_layout.setSpacing(15)
         
-        # Preset buttons
-        self.create_preset_button("🟢 Green", "#4CAF50", 0, 0, presets_layout)
-        self.create_preset_button("🔵 Blue", "#2196F3", 0, 1, presets_layout)
-        self.create_preset_button("🟣 Purple", "#9C27B0", 1, 0, presets_layout)
-        self.create_preset_button("🟠 Orange", "#FF9800", 1, 1, presets_layout)
+        # Enhanced preset buttons with more color options
+        color_presets = [
+            ("🟣 Purple", "rgb(102, 126, 234)", 0, 0),
+            ("🔵 Blue", "#2196F3", 0, 1),
+            ("🟢 Green", "#4CAF50", 0, 2),
+            ("🟠 Orange", "#FF9800", 1, 0),
+            ("🔴 Red", "#F44336", 1, 1),
+            ("🟡 Yellow", "#FFC107", 1, 2),
+            ("🟤 Brown", "#795548", 2, 0),
+            ("🔵 Cyan", "#00BCD4", 2, 1),
+            ("🟢 Lime", "#8BC34A", 2, 2),
+            ("🟣 Indigo", "#3F51B5", 3, 0),
+            ("🌸 Pink", "#E91E63", 3, 1),
+            ("🌊 Teal", "#009688", 3, 2)
+        ]
         
-        # Custom Colors Group
-        custom_group = QGroupBox("🎯 Custom Colors")
+        for text, color, row, col in color_presets:
+            self.create_preset_button(text, color, row, col, presets_layout)
+        
+        # Custom Colors Group with enhanced color picker
+        custom_group = QGroupBox("🎯 Custom Colors & Advanced Theming")
         custom_layout = QFormLayout(custom_group)
         custom_layout.setSpacing(15)
         
+        # Primary color section
+        primary_layout = QHBoxLayout()
         self.primary_color_button = QPushButton("Choose Primary Color")
         self.primary_color_button.setProperty("class", "secondary")
         self.primary_color_button.clicked.connect(self.choose_primary_color)
         
+        self.primary_color_preview = QLabel("●")
+        self.primary_color_preview.setStyleSheet("color: rgb(102, 126, 234); font-size: 24px;")
+        
+        primary_layout.addWidget(self.primary_color_button)
+        primary_layout.addWidget(self.primary_color_preview)
+        primary_layout.addStretch()
+        
+        # Accent color section
+        accent_layout = QHBoxLayout()
         self.accent_color_button = QPushButton("Choose Accent Color")
         self.accent_color_button.setProperty("class", "secondary")
         self.accent_color_button.clicked.connect(self.choose_accent_color)
         
-        custom_layout.addRow("Primary Color:", self.primary_color_button)
-        custom_layout.addRow("Accent Color:", self.accent_color_button)
+        self.accent_color_preview = QLabel("●")
+        self.accent_color_preview.setStyleSheet("color: rgb(118, 75, 162); font-size: 24px;")
+        
+        accent_layout.addWidget(self.accent_color_button)
+        accent_layout.addWidget(self.accent_color_preview)
+        accent_layout.addStretch()
+        
+        # Background theme selector
+        self.background_combo = QComboBox()
+        self.background_combo.addItems([
+            "🌌 Dark Gradient (Default)",
+            "🌃 Solid Dark",
+            "🌆 Dark Blue",
+            "🌍 Dark Green",
+            "🌸 Dark Purple",        "🔥 Dark Red"
+        ])
+        
+        custom_layout.addRow("Primary Color:", primary_layout)
+        custom_layout.addRow("Accent Color:", accent_layout)
+        custom_layout.addRow("Background Theme:", self.background_combo)
         
         # Interface Group
         interface_group = QGroupBox("🖥️ Interface")
@@ -368,7 +507,6 @@ class SettingsDialog(QDialog):
         self.opacity_slider = QSlider(Qt.Horizontal)
         self.opacity_slider.setRange(80, 100)
         self.opacity_slider.setValue(100)
-        
         self.opacity_label = QLabel("100%")
         self.opacity_slider.valueChanged.connect(lambda v: self.opacity_label.setText(f"{v}%"))
         
@@ -376,19 +514,32 @@ class SettingsDialog(QDialog):
         interface_layout.addRow("Window opacity:", self.opacity_slider)
         interface_layout.addRow("", self.opacity_label)
         
-        theme_layout.addWidget(presets_group)
-        theme_layout.addWidget(custom_group)
-        theme_layout.addWidget(interface_group)
-        theme_layout.addStretch()
-        
+        scroll_layout.addWidget(presets_group)
+        scroll_layout.addWidget(custom_group)
+        scroll_layout.addWidget(interface_group)
+        scroll_layout.addStretch()
+        scroll_area.setWidget(scroll_content)
+        theme_layout.addWidget(scroll_area)
         self.tab_widget.addTab(theme_widget, "🎨 Theme")
     
     def create_advanced_tab(self):
-        """Create advanced settings tab"""
+        """Create advanced settings tab with scroll area"""
         advanced_widget = QWidget()
         advanced_layout = QVBoxLayout(advanced_widget)
-        advanced_layout.setContentsMargins(20, 20, 20, 20)
-        advanced_layout.setSpacing(20)
+        advanced_layout.setContentsMargins(0, 0, 0, 0)
+        
+        # Create scroll area
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        scroll_area.setFrameShape(QFrame.NoFrame)
+        
+        # Content widget for scroll area
+        scroll_content = QWidget()
+        scroll_layout = QVBoxLayout(scroll_content)
+        scroll_layout.setContentsMargins(20, 20, 20, 20)
+        scroll_layout.setSpacing(20)
         
         # Network Group
         network_group = QGroupBox("🌐 Network Settings")
@@ -431,8 +582,7 @@ class SettingsDialog(QDialog):
         monitoring_layout.addRow("Scan interval:", self.scan_interval_spinbox)
         monitoring_layout.addRow("", self.ignore_hidden_checkbox)
         monitoring_layout.addRow("", self.ignore_temp_checkbox)
-        
-        # Debug Group
+          # Debug Group
         debug_group = QGroupBox("🐛 Debug Settings")
         debug_layout = QVBoxLayout(debug_group)
         debug_layout.setSpacing(10)
@@ -440,16 +590,16 @@ class SettingsDialog(QDialog):
         self.verbose_logging_checkbox = QCheckBox("Enable verbose logging")
         self.debug_mode_checkbox = QCheckBox("Enable debug mode")
         self.save_logs_checkbox = QCheckBox("Save logs to file")
-        
         debug_layout.addWidget(self.verbose_logging_checkbox)
         debug_layout.addWidget(self.debug_mode_checkbox)
         debug_layout.addWidget(self.save_logs_checkbox)
         
-        advanced_layout.addWidget(network_group)
-        advanced_layout.addWidget(monitoring_group)
-        advanced_layout.addWidget(debug_group)
-        advanced_layout.addStretch()
-        
+        scroll_layout.addWidget(network_group)
+        scroll_layout.addWidget(monitoring_group)
+        scroll_layout.addWidget(debug_group)
+        scroll_layout.addStretch()
+        scroll_area.setWidget(scroll_content)
+        advanced_layout.addWidget(scroll_area)
         self.tab_widget.addTab(advanced_widget, "🔧 Advanced")
     
     def create_preset_button(self, text, color, row, col, layout):
@@ -458,13 +608,18 @@ class SettingsDialog(QDialog):
         button.setProperty("class", "preset")
         button.setStyleSheet(f"""
             QPushButton[class="preset"] {{
-                background-color: {color};
+                background: {color};
                 color: white;
-                border: 2px solid {color};
+                border: none;
+                font-weight: 600;
+                transition: all 0.2s ease;
             }}
             QPushButton[class="preset"]:hover {{
-                background-color: {color};
-                border: 2px solid white;
+                background: {color};
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);            }}
+            QPushButton[class="preset"]:pressed {{
+                transform: translateY(0px);
             }}
         """)
         button.clicked.connect(lambda: self.apply_color_preset(color))
@@ -495,7 +650,6 @@ class SettingsDialog(QDialog):
         
         button_layout.addWidget(cancel_button)
         button_layout.addWidget(save_button)
-        
         parent_layout.addLayout(button_layout)
     
     def apply_color_preset(self, color):
@@ -506,16 +660,32 @@ class SettingsDialog(QDialog):
             pass
     
     def choose_primary_color(self):
-        """Choose custom primary color"""
-        color = QColorDialog.getColor(QColor("#4CAF50"), self, "Choose Primary Color")
+        """Choose custom primary color with enhanced color picker"""
+        current_color = QColor("rgb(102, 126, 234)")
+        color = QColorDialog.getColor(current_color, self, "Choose Primary Color")
         if color.isValid():
             self.primary_color_button.setText(f"Primary: {color.name()}")
+            self.primary_color_preview.setStyleSheet(f"color: {color.name()}; font-size: 24px;")
+            # Optionally apply color immediately for preview
+            if self.parent_window:
+                self.apply_color_live(color, 'primary')
     
     def choose_accent_color(self):
-        """Choose custom accent color"""
-        color = QColorDialog.getColor(QColor("#2E7D32"), self, "Choose Accent Color")
+        """Choose custom accent color with enhanced color picker"""
+        current_color = QColor("rgb(118, 75, 162)")
+        color = QColorDialog.getColor(current_color, self, "Choose Accent Color")
         if color.isValid():
             self.accent_color_button.setText(f"Accent: {color.name()}")
+            self.accent_color_preview.setStyleSheet(f"color: {color.name()}; font-size: 24px;")
+            # Optionally apply color immediately for preview
+            if self.parent_window:
+                self.apply_color_live(color, 'accent')
+    
+    def apply_color_live(self, color, color_type):
+        """Apply color changes live for preview"""
+        # This could update the parent window's theme in real-time
+        # Implementation would depend on how the main window handles theme updates
+        pass
     
     def reset_to_defaults(self):
         """Reset all settings to defaults"""
