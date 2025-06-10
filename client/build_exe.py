@@ -161,14 +161,14 @@ def main():
     # Install PyInstaller
     if not install_pyinstaller():
         return False
-    
-    # Create spec file
+      # Create spec file
     create_spec_file()
     
     # Build executable
     if not build_executable():
         return False
-      print("=" * 50)
+    
+    print("=" * 50)
     print("✅ Build completed successfully!")
     print("\n📋 Next steps:")
     print("1. Test the application: dist/VRCPhoto2URL-Desktop/VRCPhoto2URL-Desktop.exe")
