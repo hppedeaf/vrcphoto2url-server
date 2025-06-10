@@ -133,10 +133,10 @@ class UploadWorker(QThread):
                 
                 self.upload_progress.emit(f"Uploading {filename}", 50)
                 file_size = os.path.getsize(filepath)
-                
-                # Try to upload the file
+                  # Try to upload the file
                 result = self.server_manager.upload_file(filepath)
-                  # Check if upload was successful
+                
+                # Check if upload was successful
                 if result and 'url' in result:
                     self.upload_progress.emit(f"Completed {filename}", 100)
                     self.upload_complete.emit(filename, "Custom Server", result['url'], file_size)
@@ -144,7 +144,8 @@ class UploadWorker(QThread):
                     self.upload_failed.emit(filename, "Upload failed - no URL in response")
                 
                 time.sleep(0.5)  # Rate limiting
-                  except Exception as e:
+                
+            except Exception as e:
                 # Import ServerError to handle server-specific errors
                 try:
                     from .server_client import ServerError
