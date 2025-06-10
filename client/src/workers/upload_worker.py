@@ -28,6 +28,7 @@ class UploadWorker(QThread):
         self.running = True
         
         while self.running and self.upload_queue:
+            filename = "unknown file"  # Default fallback
             try:
                 upload_item = self.upload_queue.pop(0)
                 filepath = upload_item['filepath']

@@ -144,8 +144,7 @@ class UploadWorker(QThread):
                     self.upload_failed.emit(filename, "Upload failed - no URL in response")
                 
                 time.sleep(0.5)  # Rate limiting
-                
-            except Exception as e:
+                  except Exception as e:
                 # Import ServerError to handle server-specific errors
                 try:
                     from .server_client import ServerError
@@ -154,7 +153,6 @@ class UploadWorker(QThread):
                         from server_client import ServerError
                     except ImportError:
                         import sys
-                        import os
                         current_dir = os.path.dirname(os.path.abspath(__file__))
                         if current_dir not in sys.path:
                             sys.path.insert(0, current_dir)
