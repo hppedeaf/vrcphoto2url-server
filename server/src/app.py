@@ -261,6 +261,56 @@ def create_thumbnail(image_path: Path, thumbnail_path: Path, size: tuple = (200,
         logger.error(f"Error creating thumbnail: {e}")
         return False
 
+def resize_image_if_needed(image_path: Path, max_resolution: int = 2048, quality: int = 85):
+    """Resize image if it exceeds maximum resolution while maintaining aspect ratio"""
+    try:
+        with Image.open(image_path) as img:
+            # Get original dimensions
+            original_width, original_height = img.size
+            
+            # Check if resizing is needed
+            if original_width <= max_resolution and original_height <= max_resolution:
+                logger.info(f"Image {image_path.name} ({original_width}x{original_height}) is within size limits, no resize needed")
+                return False  # No resize needed
+            
+            # Calculate new dimensions maintaining aspect ratio
+            if original_width > original_height:
+                # Landscape or square
+                new_width = max_resolution
+                new_height = int((original_height * max_resolution) / original_width)
+            else:
+                # Portrait
+                new_height = max_resolution
+                new_width = int((original_width * max_resolution) / original_height)
+            
+            # Resize the image
+            resized_img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+            
+            # Save with optimization
+            # Preserve original format if possible, fallback to JPEG for better compression
+            if img.format in ['JPEG', 'JPG']:
+                resized_img.save(image_path, format='JPEG', optimize=True, quality=quality)
+            elif img.format == 'PNG':
+                # For PNG, check if it has transparency
+                if resized_img.mode in ('RGBA', 'LA') or (resized_img.mode == 'P' and 'transparency' in resized_img.info):
+                    resized_img.save(image_path, format='PNG', optimize=True)
+                else:
+                    # Convert to JPEG for better compression if no transparency
+                    rgb_img = Image.new('RGB', resized_img.size, (255, 255, 255))
+                    rgb_img.paste(resized_img, mask=resized_img.split()[-1] if resized_img.mode == 'RGBA' else None)
+                    rgb_img.save(image_path, format='JPEG', optimize=True, quality=quality)
+            else:
+                # For other formats, convert to JPEG
+                rgb_img = resized_img.convert('RGB')
+                rgb_img.save(image_path, format='JPEG', optimize=True, quality=quality)
+            
+            logger.info(f"Image {image_path.name} resized from {original_width}x{original_height} to {new_width}x{new_height}")
+            return True  # Resize was performed
+            
+    except Exception as e:
+        logger.error(f"Error resizing image {image_path}: {e}")
+        return False
+
 def get_file_type(filename: str) -> str:
     """Determine file type category"""
     extension = Path(filename).suffix.lower()
@@ -329,6 +379,14 @@ async def upload_file(
         with open(file_path, "wb") as f:
             f.write(content)
         
+        # Auto-resize images if they're too large (before creating thumbnail)
+        resized = False
+        if get_file_type(file.filename) == 'images':
+            resized = resize_image_if_needed(file_path, max_resolution=2048, quality=85)
+            # Update file size if image was resized
+            if resized:
+                file_size = file_path.stat().st_size
+        
         # Create thumbnail for images
         thumbnail_path = None
         if get_file_type(file.filename) == 'images':
@@ -355,7 +413,8 @@ async def upload_file(
             "upload_time": datetime.now().isoformat(),
             "file_type": get_file_type(file.filename),
             "content_type": file.content_type,
-            "has_thumbnail": thumbnail_path is not None
+            "has_thumbnail": thumbnail_path is not None,
+            "was_resized": resized
         }
         
         save_file_metadata(file_id, metadata)
@@ -363,7 +422,9 @@ async def upload_file(
         # Invalidate file cache to ensure fresh data on next request
         invalidate_file_cache()
         
-        logger.info(f"File uploaded: {file.filename} -> {file_id}")
+        # Log upload with resize information
+        resize_info = " (auto-resized)" if resized else ""
+        logger.info(f"File uploaded: {file.filename} -> {file_id}{resize_info}")
         
         return UploadResponse(
             success=True,

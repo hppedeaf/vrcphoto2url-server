@@ -24,7 +24,7 @@ a = Analysis(
         'os',
         'sys',
         'subprocess',
-        'watchdog',
+        'watchdog',	
         'watchdog.observers',
         'watchdog.events',
         'modern_client',

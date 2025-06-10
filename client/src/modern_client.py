@@ -136,8 +136,7 @@ class UploadWorker(QThread):
                 
                 # Try to upload the file
                 result = self.server_manager.upload_file(filepath)
-                
-                # Check if upload was successful
+                  # Check if upload was successful
                 if result and 'url' in result:
                     self.upload_progress.emit(f"Completed {filename}", 100)
                     self.upload_complete.emit(filename, "Custom Server", result['url'], file_size)
@@ -145,7 +144,8 @@ class UploadWorker(QThread):
                     self.upload_failed.emit(filename, "Upload failed - no URL in response")
                 
                 time.sleep(0.5)  # Rate limiting
-                  except Exception as e:
+                
+            except Exception as e:
                 # Import ServerError to handle server-specific errors
                 try:
                     from .server_client import ServerError
@@ -888,8 +888,7 @@ class ModernCustomClient(QMainWindow):
         """Disconnect from server"""
         self.connected = False
         self.server_manager.disconnect()
-        
-        # Update UI
+          # Update UI
         self.connection_status.update_status("❌ Not Connected", "error")
         self.connect_btn.setText("🔗 Connect")
         self.connect_btn.setStyleType("primary")
@@ -903,7 +902,8 @@ class ModernCustomClient(QMainWindow):
         
         self.log_activity("🔌 Disconnected from server")
         self.statusBar().showMessage("Disconnected")
-          def show_connection_dialog(self):
+    
+    def show_connection_dialog(self):
         """Show connection configuration dialog"""
         try:
             from .connection_dialog import ConnectionDialog
