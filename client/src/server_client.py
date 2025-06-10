@@ -165,15 +165,24 @@ class ServerManager:
                     timeout=300  # 5 minutes for uploads
                 )
                 
-                if response.status_code == 200:
-                    return response.json()
+                # Accept both 200 and 201 as successful responses
+                if response.status_code in [200, 201]:
+                    result = response.json()
+                    logger.info(f"Upload successful: {file_path.name} -> {result.get('url', 'no URL')}")
+                    return result
                 else:
-                    raise ServerError(f"Upload failed: {response.status_code} - {response.text}")
+                    error_msg = f"Upload failed: {response.status_code} - {response.text}"
+                    logger.error(error_msg)
+                    raise ServerError(error_msg)
                     
         except requests.exceptions.RequestException as e:
-            raise ServerError(f"Upload failed: {str(e)}")
+            error_msg = f"Upload failed: {str(e)}"
+            logger.error(error_msg)
+            raise ServerError(error_msg)
         except Exception as e:
-            raise ServerError(f"Upload error: {str(e)}")
+            error_msg = f"Upload error: {str(e)}"
+            logger.error(error_msg)
+            raise ServerError(error_msg)
     
     def list_files(self) -> List[Dict[str, Any]]:
         """

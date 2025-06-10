@@ -80,9 +80,30 @@ class Config:
     }
     
     # Railway URL (will be set automatically by Railway)
-    BASE_URL = os.getenv("RAILWAY_PUBLIC_DOMAIN", 
-                        os.getenv("RAILWAY_STATIC_URL", 
-                                 os.getenv("PUBLIC_URL", "http://localhost:8000")))
+    @classmethod
+    def get_base_url(cls):
+        """Get BASE_URL dynamically based on current environment"""
+        # Get the actual port being used
+        current_port = cls.PORT
+        default_local_url = f"http://localhost:{current_port}"
+        
+        raw_base_url = os.getenv("RAILWAY_PUBLIC_DOMAIN", 
+                                 os.getenv("RAILWAY_STATIC_URL", 
+                                          os.getenv("PUBLIC_URL", default_local_url)))
+        
+        # Ensure protocol is included
+        if raw_base_url.startswith("http://") or raw_base_url.startswith("https://"):
+            final_url = raw_base_url
+        else:
+            # For Railway deployment, use https:// for domains without protocol
+            if "localhost" in raw_base_url or "127.0.0.1" in raw_base_url:
+                final_url = f"http://{raw_base_url}"
+            else:
+                final_url = f"https://{raw_base_url}"
+        
+        # Debug logging
+        logger.info(f"BASE_URL configuration: PORT={current_port}, RAW={raw_base_url}, FINAL={final_url}")
+        return final_url
 
 # Initialize FastAPI
 app = FastAPI(
@@ -307,10 +328,10 @@ async def upload_file(
         file_extension = Path(file.filename).suffix.lower()
         if get_file_type(file.filename) == 'images':
             # For images, use direct file serving with extension
-            file_url = f"{Config.BASE_URL}/files/{file_id}{file_extension}"
+            file_url = f"{Config.get_base_url()}/files/{file_id}{file_extension}"
         else:
             # For other files, use standard endpoint
-            file_url = f"{Config.BASE_URL}/files/{file_id}"
+            file_url = f"{Config.get_base_url()}/files/{file_id}"
         
         # Save metadata
         metadata = {
@@ -393,15 +414,21 @@ async def get_file(file_id: str):
         content_type = metadata.get("content_type", "application/octet-stream")
         original_filename = metadata.get("original_filename", filename)
         
-        # If accessed with extension and it's an image, display inline
+        # Enhanced image serving logic for better browser compatibility
         if extension and get_file_type(original_filename) == 'images':
+            # For images accessed with extension, serve inline with proper headers
+            headers = {
+                "Content-Disposition": "inline",
+                "Cache-Control": "public, max-age=3600",  # Cache for 1 hour
+                "Cross-Origin-Resource-Policy": "cross-origin"  # Allow cross-origin access
+            }
             return FileResponse(
                 path=file_path,
                 media_type=content_type,
-                headers={"Content-Disposition": "inline"}
+                headers=headers
             )
         else:
-            # Standard download behavior
+            # Standard download behavior for non-images or access without extension
             return FileResponse(
                 path=file_path,
                 filename=original_filename,
@@ -684,14 +711,14 @@ async def admin_get_files():
             file_extension = Path(file_data["original_filename"]).suffix
             
             if get_file_type(file_data["original_filename"]) == 'images':
-                url = f"{Config.BASE_URL}/files/{file_id}{file_extension}"
+                url = f"{Config.get_base_url()}/files/{file_id}{file_extension}"
             else:
-                url = f"{Config.BASE_URL}/files/{file_id}"
+                url = f"{Config.get_base_url()}/files/{file_id}"
             
             # Check if thumbnail exists
             thumbnail_path = Config.THUMBNAILS_DIR / f"{file_id}_thumb.jpg"
             has_thumbnail = thumbnail_path.exists()
-            thumbnail_url = f"{Config.BASE_URL}/files/{file_id}/thumbnail" if has_thumbnail else None
+            thumbnail_url = f"{Config.get_base_url()}/files/{file_id}/thumbnail" if has_thumbnail else None
             
             file_info = FileInfo(
                 file_id=file_data["file_id"],

@@ -8,8 +8,8 @@ import sys
 import uvicorn
 
 def main():
-    # Get port from Railway environment, default to 8000
-    port = int(os.environ.get("PORT", 8000))
+    # Get port from Railway environment, default to 8080 for testing
+    port = int(os.environ.get("PORT", 8080))
     host = os.environ.get("HOST", "0.0.0.0")
     
     print(f"Starting VRCPhoto2URL server on {host}:{port}")

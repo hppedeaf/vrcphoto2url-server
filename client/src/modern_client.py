@@ -104,19 +104,23 @@ class UploadWorker(QThread):
         self.running = False
         
     def add_upload(self, filepath: str):
-        """Add file to upload queue"""
+        """Add file to upload queue and start worker if not running"""
         if filepath not in [item['filepath'] for item in self.upload_queue]:
             self.upload_queue.append({
                 'filepath': filepath,
                 'timestamp': time.time(),
                 'filename': os.path.basename(filepath)
             })
+            
+            # Start the worker if it's not already running
+            if not self.isRunning():                self.start()
     
     def run(self):
         """Process upload queue"""
         self.running = True
         
         while self.running and self.upload_queue:
+            upload_item = None
             try:
                 upload_item = self.upload_queue.pop(0)
                 filepath = upload_item['filepath']
@@ -129,18 +133,32 @@ class UploadWorker(QThread):
                 
                 self.upload_progress.emit(f"Uploading {filename}", 50)
                 file_size = os.path.getsize(filepath)
+                
+                # Try to upload the file
                 result = self.server_manager.upload_file(filepath)
                 
+                # Check if upload was successful
                 if result and 'url' in result:
                     self.upload_progress.emit(f"Completed {filename}", 100)
                     self.upload_complete.emit(filename, "Custom Server", result['url'], file_size)
                 else:
-                    self.upload_failed.emit(filename, "Upload failed - no response")
+                    self.upload_failed.emit(filename, "Upload failed - no URL in response")
                 
                 time.sleep(0.5)  # Rate limiting
                 
             except Exception as e:
-                self.upload_failed.emit(filename, f"Upload error: {str(e)}")
+                # Import ServerError to handle server-specific errors
+                from server_client import ServerError
+                
+                if upload_item:
+                    filename = upload_item['filename']
+                else:
+                    filename = "unknown file"
+                
+                if isinstance(e, ServerError):
+                    self.upload_failed.emit(filename, str(e))
+                else:
+                    self.upload_failed.emit(filename, f"Upload error: {str(e)}")
         
         self.running = False
     
@@ -276,12 +294,11 @@ class ModernCustomClient(QMainWindow):
         self.create_modern_header(main_layout)
           # Create main content area
         self.create_main_content(main_layout)
-        
-        # Create status bar
+          # Create status bar
         self.create_status_bar()
         
-    def apply_modern_theme(self):
-        """Apply modern dark theme matching web interface"""
+    def apply_modern_theme(self, custom_primary_color=None, custom_accent_color=None):
+        """Apply modern dark theme matching web interface with optional custom colors"""
         palette = QPalette()
         
         # Colors matching the web admin interface
@@ -289,7 +306,14 @@ class ModernCustomClient(QMainWindow):
         secondary_bg = QColor(26, 26, 46)    # --bg-secondary: #1a1a2e  
         surface_bg = QColor(30, 41, 59)      # --bg-surface: #1e293b
         hover_bg = QColor(51, 65, 85)        # --bg-hover: #334155
-        primary_color = QColor(102, 126, 234) # --primary-color: #667eea
+          # Use custom primary color if provided, otherwise default
+        if custom_primary_color:
+            if isinstance(custom_primary_color, str):
+                primary_color = QColor(custom_primary_color)
+            else:
+                primary_color = custom_primary_color
+        else:
+            primary_color = QColor(244, 67, 54) # Red theme default: #F44336
         text_primary = QColor(255, 255, 255)  # --text-primary: #ffffff
         text_secondary = QColor(203, 213, 225) # --text-secondary: #cbd5e1
         text_muted = QColor(148, 163, 184)    # --text-muted: #94a3b8
@@ -341,6 +365,46 @@ class ModernCustomClient(QMainWindow):
                 line-height: 1.5;            }}
         """)
     
+    def apply_saved_theme_colors(self, primary_color=None, accent_color=None):
+        """Apply saved theme colors to the application"""
+        if primary_color or accent_color:
+            try:
+                from .ui_components import apply_custom_theme
+                apply_custom_theme(self, primary_color=primary_color or "#667eea", accent_color=accent_color or "#764ba2")
+                self.log_activity(f"🎨 Applied saved theme colors: Primary={primary_color}, Accent={accent_color}")
+            except Exception as e:
+                self.log_activity(f"⚠️ Failed to apply saved theme colors: {str(e)}")
+
+    def refresh_theme(self):
+        """Refresh theme with current settings"""
+        # Load saved colors from settings
+        primary_color = self.get_setting('primary_color')
+        accent_color = self.get_setting('accent_color')
+        
+        # Apply theme with saved colors
+        self.apply_modern_theme(primary_color, accent_color)
+        
+        # Update header gradient if we have custom colors
+        if primary_color or accent_color:
+            self.update_header_gradient(primary_color, accent_color)
+    
+    def update_header_gradient(self, primary_color=None, accent_color=None):
+        """Update header gradient with custom colors"""
+        primary = primary_color or "rgb(102, 126, 234)"
+        accent = accent_color or "rgb(118, 75, 162)"
+        
+        # Find header frame and update its gradient
+        header_frame = self.findChild(QFrame)
+        if header_frame and header_frame.minimumHeight() == 140:  # Our header frame
+            header_frame.setStyleSheet(f"""
+                QFrame {{
+                    background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+                        stop:0 {primary}, stop:0.5 {accent}, stop:1 {primary});
+                    border-bottom: 2px solid rgb(51, 65, 85);
+                    border-radius: 0px;
+                }}
+            """)
+    
     def create_modern_header(self, parent_layout):
         """Create modern header matching web interface design"""
         header_frame = QFrame()
@@ -349,7 +413,7 @@ class ModernCustomClient(QMainWindow):
         header_frame.setStyleSheet("""
             QFrame {
                 background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
-                    stop:0 rgb(102, 126, 234), stop:0.5 rgb(118, 75, 162), stop:1 rgb(102, 126, 234));
+                    stop:0 #F44336, stop:0.5 #D32F2F, stop:1 #F44336);
                 border-bottom: 2px solid rgb(51, 65, 85);
                 border-radius: 0px;
             }
@@ -552,8 +616,7 @@ class ModernCustomClient(QMainWindow):
         activity_widget = QWidget()
         activity_layout = QVBoxLayout(activity_widget)
         activity_layout.setContentsMargins(20, 20, 20, 20)
-        activity_layout.setSpacing(20)
-          # Create tab widget with web-matching styling
+        activity_layout.setSpacing(20)        # Create tab widget with web-matching styling
         self.tab_widget = QTabWidget()
         self.tab_widget.setStyleSheet("""
             QTabWidget::pane {
@@ -561,7 +624,6 @@ class ModernCustomClient(QMainWindow):
                 border-radius: 12px;
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
                     stop:0 rgba(15, 15, 35, 0.8), stop:1 rgba(26, 26, 46, 0.8));
-                backdrop-filter: blur(10px);
             }
             QTabBar::tab {
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
@@ -588,11 +650,12 @@ class ModernCustomClient(QMainWindow):
                 color: white;
             }
         """)
-        
-        # Activity log tab
+          # Activity log tab
         self.create_activity_tab()
         
-        # Files tab        self.create_files_tab()
+        # Files tab
+        self.create_files_tab()
+        
         # Statistics tab
         self.create_statistics_tab()
         
@@ -650,8 +713,7 @@ class ModernCustomClient(QMainWindow):
         files_widget = QWidget()
         files_layout = QVBoxLayout(files_widget)
         files_layout.setContentsMargins(20, 20, 20, 20)
-        
-        # Create scroll area for files list
+          # Create scroll area for files list
         scroll_area = QScrollArea()
         scroll_area.setWidgetResizable(True)
         scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
@@ -679,12 +741,13 @@ class ModernCustomClient(QMainWindow):
             }
             QListWidget::item:selected {
                 background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
-                    stop:0 rgba(102, 126, 234, 0.3), stop:1 rgba(118, 75, 162, 0.3));
-                border: 1px solid rgba(102, 126, 234, 0.5);
+                    stop:0 rgba(244, 67, 54, 0.3), stop:1 rgba(211, 47, 47, 0.3));
+                border: 1px solid rgba(244, 67, 54, 0.5);
             }
             QListWidget::item:hover {
                 background: rgba(51, 65, 85, 0.2);
-                border-bottom: 1px solid rgba(102, 126, 234, 0.4);
+                border-bottom: 1px solid rgba(244, 67, 54, 0.4);
+                cursor: pointer;
             }
             QScrollBar:vertical {
                 background: rgba(51, 65, 85, 0.3);
@@ -692,13 +755,17 @@ class ModernCustomClient(QMainWindow):
                 border-radius: 4px;
             }
             QScrollBar::handle:vertical {
-                background: rgba(102, 126, 234, 0.6);
+                background: rgba(244, 67, 54, 0.6);
                 border-radius: 4px;
                 min-height: 20px;
             }
             QScrollBar::handle:vertical:hover {
-                background: rgba(102, 126, 234, 0.8);        }
+                background: rgba(244, 67, 54, 0.8);
+            }
         """)
+        
+        # Connect double-click to copy URL
+        self.files_list.itemDoubleClicked.connect(self.copy_file_url)
         
         scroll_area.setWidget(self.files_list)
         files_layout.addWidget(scroll_area)
@@ -1286,9 +1353,15 @@ class ModernCustomClient(QMainWindow):
                     self.save_setting('monitored_directories', self.monitored_directories)
                     self.log_activity(f"🎮 Auto-detected and added VRChat folder: {vrchat_folder}")
                 else:
-                    self.monitored_directories = []
-              # Update the folders display
+                    self.monitored_directories = []            # Update the folders display
             QTimer.singleShot(500, self.update_monitored_folders_display)
+            
+            # Apply saved theme colors if available
+            primary_color = self._settings.get('primary_color')
+            accent_color = self._settings.get('accent_color')
+            if primary_color or accent_color:
+                # Use QTimer to ensure UI is fully initialized before applying theme
+                QTimer.singleShot(1000, lambda: self.apply_saved_theme_colors(primary_color, accent_color))
             
         except Exception as e:
             self.log_activity(f"⚠️ Failed to load settings: {str(e)}")
@@ -1337,12 +1410,12 @@ class ModernCustomClient(QMainWindow):
         # Stop monitoring if active
         if self.monitoring:
             self.stop_monitoring()
-        
-        # Stop upload worker if running
+          # Stop upload worker if running
         if self.upload_worker.isRunning():
             self.upload_worker.stop()
             self.upload_worker.wait()
-          # Save settings
+        
+        # Save settings
         self.save_settings()
         event.accept()
 
@@ -1366,11 +1439,31 @@ class ModernCustomClient(QMainWindow):
     def show_settings(self):
         """Show settings dialog"""
         dialog = SettingsDialog(self)
+        
+        # Connect to settings changed signal to refresh theme immediately
+        if hasattr(dialog, 'settings_changed'):
+            dialog.settings_changed.connect(self.on_settings_changed)
+        
         if dialog.exec() == QDialog.Accepted:
             settings = dialog.get_settings()
             for key, value in settings.items():
                 self.save_setting(key, value)
             self.log_activity("⚙️ Settings updated")
+            
+            # Apply theme changes if color settings were modified
+            if 'primary_color' in settings or 'accent_color' in settings:
+                self.apply_saved_theme_colors(                settings.get('primary_color'), 
+                    settings.get('accent_color')
+                )
+    
+    def on_settings_changed(self):
+        """Handle settings changes from dialog"""
+        # Reload and apply settings immediately
+        primary_color = self.get_setting('primary_color')
+        accent_color = self.get_setting('accent_color')
+        
+        if primary_color or accent_color:
+            self.apply_saved_theme_colors(primary_color, accent_color)
 
     def on_upload_success(self, filename, service, url, size):
         """Handle successful upload"""
@@ -1380,9 +1473,12 @@ class ModernCustomClient(QMainWindow):
         
         # Update statistics
         self.update_statistics()
-        
-        # Add to files list
-        self.files_list.addItem(f"✅ {filename} - {url}")
+          # Add to files list with stored URL data
+        item_text = f"✅ {filename} - Click to copy URL"
+        self.files_list.addItem(item_text)
+        # Store URL data in the item for easy access
+        item = self.files_list.item(self.files_list.count() - 1)
+        item.setData(Qt.UserRole, url)
         
         # Log activity
         self.log_activity(f"✅ Uploaded: {filename} -> {url}")
@@ -1395,6 +1491,23 @@ class ModernCustomClient(QMainWindow):
         
         # Show notification
         NotificationCard.show_success(self, f"Uploaded {filename}")
+    
+    def copy_file_url(self, item):
+        """Copy file URL to clipboard when item is double-clicked"""
+        if item:
+            url = item.data(Qt.UserRole)
+            if url:
+                from PySide6.QtWidgets import QApplication, QMessageBox
+                QApplication.clipboard().setText(url)
+                self.log_activity(f"📋 Copied URL to clipboard: {url}")
+                
+                # Show a brief notification
+                msg = QMessageBox(self)
+                msg.setWindowTitle("URL Copied")
+                msg.setText(f"URL copied to clipboard!\n\n{url}")
+                msg.setIcon(QMessageBox.Information)
+                msg.setStandardButtons(QMessageBox.Ok)
+                msg.exec()
     
     def on_upload_failed(self, filename, error):
         """Handle failed upload"""

@@ -64,15 +64,13 @@ class ConnectionDialog(QDialog):
                 color: #ffffff;
                 font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
                 font-weight: 400;
-            }
-            QGroupBox {
+            }            QGroupBox {
                 font-weight: 600;
                 border: none;
                 border-radius: 12px;
                 margin-top: 20px;
                 padding-top: 15px;
                 background: rgba(45, 55, 72, 0.3);
-                backdrop-filter: blur(8px);
                 font-size: 14px;
             }
             QGroupBox::title {
@@ -110,16 +108,13 @@ class ConnectionDialog(QDialog):
                     stop:0 rgb(102, 126, 234), stop:1 rgb(118, 75, 162));
                 color: white;
                 font-weight: 600;
-            }
-            QPushButton[class="primary"]:hover {
+            }            QPushButton[class="primary"]:hover {
                 background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
                     stop:0 rgb(112, 136, 244), stop:1 rgb(128, 85, 172));
-                transform: translateY(-1px);
             }
             QPushButton[class="primary"]:pressed {
                 background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
                     stop:0 rgb(92, 116, 224), stop:1 rgb(108, 65, 152));
-                transform: translateY(0px);
             }
             QPushButton[class="secondary"] {
                 background: rgba(45, 55, 72, 0.7);
@@ -130,11 +125,8 @@ class ConnectionDialog(QDialog):
                 background: rgba(45, 55, 72, 0.9);
                 color: white;
                 border: 1px solid rgba(102, 126, 234, 0.6);
-                transform: translateY(-1px);
-            }
-            QPushButton[class="secondary"]:pressed {
+            }            QPushButton[class="secondary"]:pressed {
                 background: rgba(35, 45, 62, 0.9);
-                transform: translateY(0px);
             }
             QCheckBox {
                 color: rgba(203, 213, 225, 0.9);

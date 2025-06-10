@@ -30,12 +30,12 @@ class ModernCard(QGroupBox):
         # Set the title with icon
         display_title = f"{self.icon} {self.title}" if self.icon else self.title
         self.setTitle(display_title)
-        
-        # Create main layout
+          # Create main layout
         self.main_layout = QVBoxLayout(self)
         self.main_layout.setContentsMargins(20, 25, 20, 20)
         self.main_layout.setSpacing(15)
-          # Create content container
+        
+        # Create content container
         self.content_widget = QWidget()
         self.content_layout = QVBoxLayout(self.content_widget)
         self.content_layout.setContentsMargins(0, 0, 0, 0)
@@ -56,7 +56,6 @@ class ModernCard(QGroupBox):
                 padding-top: 25px;
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
                     stop:0 rgba(30, 41, 59, 0.8), stop:1 rgba(26, 26, 46, 0.8));
-                backdrop-filter: blur(10px);
             }
             QGroupBox::title {
                 subcontrol-origin: margin;
@@ -155,8 +154,7 @@ class ActionButton(QPushButton):
                 "background": "transparent",
                 "hover": "rgba(102, 126, 234, 0.1)",
                 "text": "rgb(102, 126, 234)",
-                "border": "2px solid rgb(102, 126, 234)"
-            }
+                "border": "2px solid rgb(102, 126, 234)"            }
         }
         
         style = styles.get(self.style_type, styles["primary"])
@@ -176,11 +174,9 @@ class ActionButton(QPushButton):
             }}
             QPushButton:hover {{
                 background: {style["hover"]};
-                transform: translateY(-1px);
             }}
             QPushButton:pressed {{
                 background: {style["background"]};
-                transform: translateY(0px);
             }}
             QPushButton:disabled {{
                 background: rgba(148, 163, 184, 0.3);
@@ -579,3 +575,139 @@ def apply_modern_theme(app_or_widget):
     
     if hasattr(app_or_widget, 'setStyleSheet'):
         app_or_widget.setStyleSheet(style)
+
+def apply_custom_theme(app_or_widget, primary_color="#4CAF50", accent_color="#45a049"):
+    """Apply custom theme with specified colors"""
+    palette = QPalette()
+    
+    # Colors
+    dark_bg = QColor(26, 26, 26)  # #1a1a1a
+    medium_bg = QColor(45, 45, 45)  # #2d2d2d
+    light_bg = QColor(64, 64, 64)  # #404040
+    primary = QColor(primary_color) if isinstance(primary_color, str) else primary_color
+    accent = QColor(accent_color) if isinstance(accent_color, str) else accent_color
+    text_color = QColor(255, 255, 255)  # White
+    disabled_color = QColor(128, 128, 128)  # Gray
+    
+    # Set palette colors
+    palette.setColor(QPalette.Window, dark_bg)
+    palette.setColor(QPalette.WindowText, text_color)
+    palette.setColor(QPalette.Base, medium_bg)
+    palette.setColor(QPalette.AlternateBase, light_bg)
+    palette.setColor(QPalette.ToolTipBase, text_color)
+    palette.setColor(QPalette.ToolTipText, text_color)
+    palette.setColor(QPalette.Text, text_color)
+    palette.setColor(QPalette.Button, medium_bg)
+    palette.setColor(QPalette.ButtonText, text_color)
+    palette.setColor(QPalette.BrightText, QColor(255, 0, 0))
+    palette.setColor(QPalette.Link, primary)
+    palette.setColor(QPalette.Highlight, primary)
+    palette.setColor(QPalette.HighlightedText, QColor(0, 0, 0))
+    palette.setColor(QPalette.Disabled, QPalette.Text, disabled_color)
+    palette.setColor(QPalette.Disabled, QPalette.ButtonText, disabled_color)
+    
+    if hasattr(app_or_widget, 'setPalette'):
+        app_or_widget.setPalette(palette)
+    
+    # Create darker shade for hover effects
+    primary_dark = darken_color_hex(primary_color, 0.8)
+    accent_dark = darken_color_hex(accent_color, 0.8)
+    
+    # Set custom stylesheet with dynamic colors
+    style = f"""
+        QWidget {{
+            background-color: #1a1a1a;
+            color: #ffffff;
+            font-family: 'Segoe UI', Arial, sans-serif;
+        }}
+        QMainWindow {{
+            background-color: #1a1a1a;
+        }}
+        QFrame {{
+            border: none;
+        }}
+        QScrollArea {{
+            border: none;
+            background-color: transparent;
+        }}
+        QScrollBar:vertical {{
+            background-color: #404040;
+            width: 12px;
+            border-radius: 6px;
+        }}
+        QScrollBar::handle:vertical {{
+            background-color: {primary_color};
+            border-radius: 6px;
+            min-height: 20px;
+        }}
+        QScrollBar::handle:vertical:hover {{
+            background-color: {primary_dark};
+        }}
+        QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{
+            border: none;
+            background: none;
+        }}
+        QPushButton {{
+            background-color: {primary_color};
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-weight: bold;
+        }}
+        QPushButton:hover {{
+            background-color: {primary_dark};
+        }}
+        QProgressBar::chunk {{
+            background-color: {primary_color};
+            border-radius: 4px;
+        }}
+        QCheckBox::indicator:checked {{
+            background-color: {primary_color};
+            border: 2px solid {primary_color};
+        }}
+        QTabBar::tab:selected {{
+            color: {primary_color};
+        }}
+        QLineEdit:focus {{
+            border-color: {primary_color};
+        }}
+        QListWidget::item:selected {{
+            background-color: {primary_color};
+        }}
+    """
+    
+    if hasattr(app_or_widget, 'setStyleSheet'):
+        app_or_widget.setStyleSheet(style)
+
+def darken_color_hex(color_hex, factor=0.8):
+    """Darken a hex color for hover effects"""
+    if isinstance(color_hex, QColor):
+        color_hex = color_hex.name()
+        
+    if color_hex.startswith('#'):
+        color_hex = color_hex[1:]
+    elif color_hex.startswith('rgb('):
+        # Convert rgb() to hex
+        import re
+        rgb_match = re.match(r'rgb\((\d+),\s*(\d+),\s*(\d+)\)', color_hex)
+        if rgb_match:
+            r, g, b = rgb_match.groups()
+            color_hex = f"{int(r):02x}{int(g):02x}{int(b):02x}"
+        else:
+            return color_hex  # Fallback
+    
+    try:
+        # Convert to RGB
+        r = int(color_hex[0:2], 16)
+        g = int(color_hex[2:4], 16) 
+        b = int(color_hex[4:6], 16)
+        
+        # Darken
+        r = int(r * factor)
+        g = int(g * factor)
+        b = int(b * factor)
+        
+        return f"#{r:02x}{g:02x}{b:02x}"
+    except (ValueError, IndexError):
+        return color_hex  # Fallback if parsing fails

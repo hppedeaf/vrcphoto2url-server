@@ -71,7 +71,6 @@ class SettingsDialog(QDialog):
             QPushButton[class="primary"]:hover {
                 background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
                     stop:0 rgb(112, 136, 244), stop:1 rgb(128, 85, 172));
-                transform: translateY(-1px);
             }
             QPushButton[class="secondary"] {
                 background: rgba(45, 55, 72, 0.7);
@@ -82,7 +81,6 @@ class SettingsDialog(QDialog):
                 background: rgba(45, 55, 72, 0.9);
                 color: white;
                 border: 1px solid rgba(102, 126, 234, 0.6);
-                transform: translateY(-1px);
             }
             QCheckBox {
                 color: rgba(203, 213, 225, 0.9);

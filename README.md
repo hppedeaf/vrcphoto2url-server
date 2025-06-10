@@ -1,277 +1,157 @@
-# 🎮 VRCPhoto2URL - VRChat Screenshot Auto-Uploader
+# VRCPhoto2URL - VRChat Screenshot to URL Desktop Client
 
-<div align="center">
+A modern desktop application for uploading VRChat screenshots to a custom server and generating shareable URLs with one-click copy functionality.
 
-![VRChat Logo](https://img.shields.io/badge/VRChat-Compatible-blue?style=for-the-badge&logo=vrchat)
-![Railway](https://img.shields.io/badge/Railway-Deployed-success?style=for-the-badge&logo=railway)
-![Python](https://img.shields.io/badge/Python-3.8+-blue?style=for-the-badge&logo=python)
-![Status](https://img.shields.io/badge/Status-Production%20Ready-brightgreen?style=for-the-badge)
+## 🎯 Features
 
-*Automatically upload your VRChat screenshots to the cloud and get instant shareable URLs*
+### ✨ Desktop Client
+- **Modern UI**: Clean, dark-themed interface with red accent colors
+- **Drag & Drop Upload**: Simply drag files to upload instantly
+- **One-Click URL Copy**: Automatically copies shareable URLs to clipboard
+- **File Management**: View, download, and manage uploaded files
+- **Activity Tracking**: Real-time upload progress and history
+- **Settings Persistence**: Remembers your server connection settings
 
-[🚀 Quick Start](#-quick-start) • [📚 Documentation](#-documentation) • [🌐 Live Demo](#-live-demo) • [🛠️ Setup](#️-setup)
-
-</div>
-
----
-
-## ✨ Features
-
-🎯 **Instant Upload** - Screenshots upload automatically when you take them in VRChat  
-🔗 **Direct URLs** - Get shareable links copied to your clipboard instantly  
-🖥️ **Desktop Client** - Beautiful GUI with auto-connection to cloud server  
-🌐 **Cloud Hosting** - 24/7 server running on Railway.app  
-📁 **VRChat Integration** - Monitors your VRChat Screenshots folder automatically  
-🔄 **Auto-Sync** - No manual work needed - just take screenshots and share!  
+### 🖥️ Server
+- **FastAPI Backend**: High-performance async web framework
+- **Railway Ready**: Pre-configured for Railway.com deployment
+- **File Management**: Upload, download, list, and delete files
+- **Thumbnail Generation**: Automatic image thumbnail creation
+- **API Authentication**: Secure Bearer token authentication
+- **Admin Interface**: Web-based file management dashboard
 
 ## 🚀 Quick Start
 
-### For VRChat Users (Easy Setup)
+### Option 1: Use Pre-built Executable (Recommended)
+1. Download `VRCPhoto2URL-Desktop.exe` from the `dist/` folder
+2. Run the executable
+3. Configure your server connection in settings
+4. Start uploading files!
 
-1. **Configure Connection**
-   ```bash
-   # Copy configuration template
-   copy client\client_config.json.example client\client_config.json
-   
-   # Edit client\client_config.json with your Railway URL and API key
-   ```
-
-2. **Launch Client**
-   ```bash
-   # Windows users: Double-click this file
-   scripts\start_client.bat
-   
-   # Or use Python launcher
-   python scripts\launch_client.py
-   ```
-
-3. **Auto-Connection**
-   - Client connects to your cloud server automatically
-   - Green "Connected" status appears when configured correctly
-
-4. **Add VRChat Folder**
-   - Click "📁 Add Folder" in the client
-   - Navigate to: `%USERPROFILE%\Pictures\VRChat`
-   - Select folder and enable monitoring
-
-5. **Take Screenshots**
-   - Press `F12` in VRChat (default screenshot key)
-   - URLs are automatically copied to your clipboard
-   - Share instantly by pasting anywhere!
-
-### For Server Deployment
-
+### Option 2: Run from Source
 ```bash
-# Clone repository
-git clone https://github.com/your-username/VRCPhoto2URL.git
+# Clone the repository
+git clone https://github.com/yourusername/VRCPhoto2URL.git
 cd VRCPhoto2URL
 
 # Install client dependencies
 cd client
 pip install -r requirements.txt
 
-# Launch client
-python src/modern_client.py
-
-# Or use the launcher
-python ../scripts/launch_client.py
+# Launch the desktop client
+python launch_desktop_client.py
 ```
 
-## 🏗️ Architecture
-
-```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│  VRChat Game    │    │  Desktop Client │    │  Railway Server │
-│                 │    │                 │    │                 │
-│  📸 Screenshot  │───▶│  📁 Monitor     │───▶│  ☁️ Upload      │
-│  (F12 key)     │    │  🔄 Auto-upload │    │  🔗 Generate URL│
-│                 │    │  📋 Copy URL    │    │  💾 Store File  │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-```
-
-## 🌐 Live Demo
-
-**Server**: https://vrcphoto2url-server-production.up.railway.app  
-**Status**: ✅ Online and operational  
-**Admin Panel**: Available at server URL  
+### Server Setup (Railway Deployment)
+1. Fork this repository
+2. Connect your Railway account to GitHub
+3. Deploy from the `server/` directory
+4. Set environment variables:
+   - `API_KEY`: Your chosen API key
+   - `MAX_FILE_SIZE_MB`: Maximum file size (default: 50)
 
 ## 📁 Project Structure
 
 ```
 VRCPhoto2URL/
-├── 📱 client/              # Desktop application
-│   ├── src/                # Client source code
-│   ├── client_config.json  # Auto-connection settings
-│   └── requirements.txt    # Python dependencies
-├── 🌐 server/              # Railway cloud server
-│   ├── src/                # FastAPI server code
-│   ├── start.py           # Railway startup script
-│   └── requirements.txt    # Server dependencies
-├── 🧪 tests/               # Test scripts and verification
-├── 🔧 scripts/             # Setup and launch utilities
-├── 📚 docs-consolidated/   # All documentation
-└── 📋 README.md           # This file
+├── client/                 # Desktop application
+│   ├── src/               # Source code
+│   ├── dist/              # Built executables
+│   └── launch_desktop_client.py
+├── server/                # FastAPI server
+│   ├── src/               # Server source code
+│   ├── static/            # Web interface files
+│   ├── templates/         # HTML templates
+│   └── requirements.txt
+├── dist/                  # Distribution files
+│   └── VRCPhoto2URL-Desktop.exe
+└── docs-consolidated/     # Documentation
 ```
 
-## 🛠️ Setup Guide
+## 🔧 Development
 
-### Prerequisites
-- **Python 3.8+** installed
-- **VRChat** game (for taking screenshots)
-- **Windows** (primary support)
-
-### Client Setup
-1. Navigate to `client/` folder
-2. Install dependencies: `pip install -r requirements.txt`
-3. Run: `python src/modern_client.py`
-
-### Server Setup (Optional - Already Deployed)
-The server is already running on Railway.app, but if you want to deploy your own:
-
-1. Fork this repository
-2. Connect to Railway.app
-3. Deploy the `server/` folder
-4. Set environment variables (API key)
-
-## 🎮 VRChat Integration
-
-### Screenshot Folder Location
-VRChat saves screenshots to:
-```
-C:\Users\[USERNAME]\Pictures\VRChat\
-```
-
-### Workflow
-1. **Join VRChat world**
-2. **Take screenshot** (F12)
-3. **VRChat saves** image to folder
-4. **Client detects** new file
-5. **Auto-upload** to cloud server
-6. **URL copied** to clipboard
-7. **Share anywhere** by pasting!
-
-### Supported Formats
-- PNG (VRChat default)
-- JPG/JPEG
-- GIF, BMP, WebP
-
-## 📊 Status & Monitoring
-
-### System Status
-- **Server**: ✅ Live on Railway.app
-- **Client**: ✅ Desktop GUI working
-- **Auto-connection**: ✅ Functional
-- **VRChat Integration**: ✅ Ready
-- **File Upload**: ✅ Operational
-
-### Performance
-- **Upload Speed**: Depends on file size and connection
-- **Server Response**: ~100-300ms
-- **Uptime**: 24/7 on Railway cloud
-- **Storage**: Persistent cloud storage
-
-## 🔧 Configuration
-
-### Client Configuration (`client/client_config.json`)
-```json
-{
-  "server_url": "https://vrcphoto2url-server-production.up.railway.app",
-  "api_key": "your-secure-api-key",
-  "auto_upload": true,
-  "vrchat_mode": true,
-  "remember_connection": true
-}
-```
-
-### Environment Variables (Server)
+### Building the Executable
 ```bash
-PORT=8000              # Railway assigns this automatically
-API_KEY=your-api-key   # Set in Railway dashboard
+cd client
+python build_exe.py
 ```
 
-## 🛡️ Security
+### Running the Server Locally
+```bash
+cd server
+pip install -r requirements.txt
+python start.py
+```
 
-- **HTTPS**: All connections encrypted
-- **API Authentication**: Secure token-based auth
-- **File Validation**: Only image files accepted
-- **Rate Limiting**: Prevents abuse
+## 🌐 Server Endpoints
 
-## 🔄 Updates & Deployment
+- `GET /health` - Server health check
+- `POST /upload` - Upload files (requires API key)
+- `GET /files` - List uploaded files
+- `GET /files/{file_id}` - Download specific file
+- `DELETE /files/{file_id}` - Delete specific file
+- `GET /admin` - Admin web interface
 
-### Client Updates
-1. Download latest release
-2. Replace client files
-3. Keep `client_config.json` unchanged
+## 🔐 Security
 
-### Server Updates
-- Railway auto-deploys from GitHub
-- Zero downtime deployments
-- Persistent storage maintained
+- **API Key Authentication**: All upload endpoints require valid API key
+- **File Type Validation**: Configurable allowed file types
+- **Size Limits**: Configurable maximum file size
+- **UUID File Names**: Prevents path traversal and conflicts
 
-## 📚 Documentation
+## 📊 Recent Updates
 
-- **📖 [Complete Setup Guide](docs-consolidated/VRCHAT_SETUP_GUIDE.md)**
-- **🚀 [Deployment Guide](docs-consolidated/RAILWAY_DEPLOYMENT_GUIDE.md)**
-- **🧪 [Testing Documentation](docs-consolidated/FINAL_TESTING_REPORT.md)**
-- **🔧 [API Documentation](docs-consolidated/api_documentation.md)**
+### ✅ Issues Fixed (June 2025)
+1. **URL Protocol Fix**: URLs now include proper `https://` or `http://` protocols
+2. **Image Serving Enhancement**: Improved browser compatibility for image viewing
+3. **Theme System**: Complete red-themed UI implementation
+4. **Upload Functionality**: Fixed file list integration and copy URL feature
 
-## 🤝 Contributing
+### 🎨 UI Improvements
+- Modern dark theme with red accents
+- Improved file upload workflow
+- Enhanced activity tracking
+- Better error handling and user feedback
 
-1. Fork the repository
-2. Create feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit changes (`git commit -m 'Add amazing feature'`)
-4. Push to branch (`git push origin feature/amazing-feature`)
-5. Open Pull Request
+## 🚀 Ready for Production
 
-## 📄 License
+- ✅ **Desktop Client**: Fully functional with .exe distribution
+- ✅ **Server**: Railway deployment ready
+- ✅ **URL Generation**: Complete URLs with proper protocols
+- ✅ **Cross-Platform**: Works on Windows, macOS, and Linux
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+## 📋 Requirements
 
-## 🙋‍♂️ Support
+### Desktop Client
+- Python 3.8+
+- PySide6
+- Requests
+- Windows/macOS/Linux
 
-- **Issues**: [GitHub Issues](https://github.com/your-username/VRCPhoto2URL/issues)
-- **Documentation**: Check `docs-consolidated/` folder
-- **Server Status**: https://vrcphoto2url-server-production.up.railway.app/health
+### Server
+- Python 3.8+
+- FastAPI
+- Uvicorn
+- PIL (Pillow)
+- Railway account (for deployment)
 
-## 🎉 Credits
+## 🎯 Use Cases
 
-Built with ❤️ for the VRChat community
+- **VRChat Content Creators**: Quick screenshot sharing
+- **Gaming Communities**: Easy image distribution
+- **File Sharing**: Simple drag-and-drop file hosting
+- **Screenshot Management**: Organized file storage with thumbnails
 
-- **FastAPI** - Modern web framework
-- **PySide6** - Desktop GUI framework
-- **Railway.app** - Cloud hosting platform
-- **VRChat** - The amazing social VR platform
+## 🔗 Links
+
+- **Server Demo**: [Railway Deployment URL]
+- **Documentation**: See `docs-consolidated/`
+- **Build Scripts**: See `archive/build-scripts/`
+
+## 📝 License
+
+This project is open source. See the repository for license information.
 
 ---
 
-<div align="center">
-
-**Happy VRChatting! 📸🎮**
-
-[![GitHub stars](https://img.shields.io/github/stars/your-username/VRCPhoto2URL?style=social)](https://github.com/your-username/VRCPhoto2URL)
-[![Twitter Follow](https://img.shields.io/twitter/follow/your-twitter?style=social)](https://twitter.com/your-twitter)
-
-</div>
-
----
-
-# VRCPhoto2URL - Custom File Server & Manager
-
-**Status: 🚀 PRODUCTION READY - Performance Optimized ✅**
-
-**Latest Achievement:** 99.9% performance improvement - stats endpoint optimized from 2.02s to 0.002s!
-
-## 🎯 Recent Updates
-
-### **⚡ Performance Optimization Complete (June 2025)**
-- **Dual-level caching system** with 30s file cache + 15s stats cache
-- **Advanced error handling** with file size validation and Unicode recovery
-- **Cache invalidation** on file operations for data consistency
-- **Single-pass calculations** for optimal stats processing
-- **Production readiness test** - all categories passing ✅
-
-**Performance Results:**
-- Health Check: 0.001s (99% improvement)
-- Stats Endpoint: 0.002s (99.8% improvement) 
-- Files List: 0.001s (99.95% improvement)
-- **Overall Grade: A+ (Excellent)** 🏆
+**Made for VRChat communities and content creators** 🎮✨

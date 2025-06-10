@@ -26,7 +26,37 @@ setup_module_path()
 if __name__ == "__main__":
     try:
         from PySide6.QtWidgets import QApplication
-        from modern_client import ModernCustomClient
+        
+        # Try to import the main client module with multiple fallbacks
+        ModernCustomClient = None
+        
+        try:
+            from src.modern_client import ModernCustomClient
+            print("✅ Imported from src.modern_client")
+        except ImportError:
+            try:
+                import sys
+                import os
+                # Add current directory to path for PyInstaller
+                if hasattr(sys, '_MEIPASS'):
+                    sys.path.insert(0, sys._MEIPASS)
+                else:
+                    sys.path.insert(0, os.path.dirname(__file__))
+                    
+                from modern_client import ModernCustomClient
+                print("✅ Imported from modern_client")
+            except ImportError:
+                try:
+                    from client.src.modern_client import ModernCustomClient
+                    print("✅ Imported from client.src.modern_client")
+                except ImportError as e:
+                    print(f"❌ Failed to import ModernCustomClient: {e}")
+                    print("Available modules:")
+                    import sys
+                    for module in sorted(sys.modules.keys()):
+                        if 'modern' in module.lower() or 'client' in module.lower():
+                            print(f"  - {module}")
+                    raise
         
         # Create Qt application
         app = QApplication(sys.argv)

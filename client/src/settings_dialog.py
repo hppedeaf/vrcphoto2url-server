@@ -5,14 +5,17 @@ Modern settings interface with theme customization
 """
 
 import json
+import os
+import shutil
 from pathlib import Path
+from datetime import datetime
 from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QFormLayout,
     QLabel, QLineEdit, QPushButton, QCheckBox, QSpinBox,
     QFrame, QTabWidget, QWidget, QGroupBox, QComboBox,
-    QColorDialog, QGridLayout, QSlider, QMessageBox, QScrollArea
+    QGridLayout, QSlider, QMessageBox, QScrollArea
 )
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import Qt, Signal, QTimer
 from PySide6.QtGui import QFont, QColor
 
 class SettingsDialog(QDialog):
@@ -23,205 +26,230 @@ class SettingsDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.parent_window = parent
+        
+        # Initialize color variables
+        self.current_primary_color = 'rgb(244, 67, 54)'  # Red theme default
+        self.current_accent_color = 'rgb(211, 47, 47)'   # Red theme secondary
+        
+        # Settings management
+        self.settings_file = Path.home() / ".custom_server_client" / "settings.json"
+        self.backup_dir = Path.home() / ".custom_server_client" / "backups"
+        self.auto_save_enabled = True
+        self.settings_dirty = False
+        
         self.setup_ui()
         self.load_settings()
+        self.setup_auto_save()
         
     def setup_ui(self):
         """Setup dialog UI"""
         self.setWindowTitle("⚙️ Settings")
-        self.setMinimumSize(700, 550)  # Set minimum size instead of fixed
-        self.resize(800, 650)  # Set initial size but allow resizing
+        self.setMinimumSize(700, 550)
+        self.resize(800, 650)
         self.setModal(True)
         
-        # Apply modern styling with web interface theme
+        # Apply enhanced red gradient styling
         self.setStyleSheet("""
             QDialog {
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 rgb(15, 15, 35), stop:1 rgb(26, 26, 46));
+                    stop:0 rgb(15, 15, 35), stop:0.3 rgb(20, 20, 40), 
+                    stop:0.7 rgb(22, 22, 42), stop:1 rgb(26, 26, 46));
                 color: #ffffff;
                 font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
                 font-weight: 400;
             }
+            
             QTabWidget::pane {
                 border: none;
                 border-radius: 12px;
-                background: rgba(45, 55, 72, 0.4);
-                backdrop-filter: blur(10px);
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+                    stop:0 rgba(45, 55, 72, 0.4), stop:1 rgba(244, 67, 54, 0.05));
                 margin-top: 10px;
             }
+            
+            QTabWidget::tab-bar {
+                alignment: center;
+                background: transparent;
+            }
+            
             QTabBar::tab {
-                background: rgba(45, 55, 72, 0.6);
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+                    stop:0 rgba(30, 41, 59, 0.6), stop:1 rgba(244, 67, 54, 0.1));
                 color: rgba(203, 213, 225, 0.9);
+                border: none;
+                border-radius: 8px;
                 padding: 12px 20px;
-                margin-right: 4px;
-                border-top-left-radius: 8px;
-                border-top-right-radius: 8px;
+                margin: 0 2px;
                 font-weight: 500;
                 font-size: 13px;
-                min-width: 80px;
-                border: none;
+                min-width: 100px;
             }
+            
+            QTabBar::tab:hover {
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                    stop:0 #F55336, stop:1 #E33F2F);
+                color: white;
+            }
+            
             QTabBar::tab:selected {
                 background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
-                    stop:0 rgb(102, 126, 234), stop:1 rgb(118, 75, 162));
+                    stop:0 #F44336, stop:1 #D32F2F);
                 color: white;
                 font-weight: 600;
             }
-            QTabBar::tab:hover:!selected {
-                background: rgba(102, 126, 234, 0.3);
-                color: white;
-            }
+            
             QGroupBox {
                 font-weight: 600;
                 border: none;
                 border-radius: 12px;
                 margin-top: 20px;
                 padding-top: 15px;
-                background: rgba(45, 55, 72, 0.3);
-                backdrop-filter: blur(8px);
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+                    stop:0 rgba(45, 55, 72, 0.3), stop:1 rgba(244, 67, 54, 0.02));
                 font-size: 14px;
             }
+            
             QGroupBox::title {
                 subcontrol-origin: margin;
                 left: 15px;
-                padding: 0 15px 0 15px;
-                color: rgb(102, 126, 234);
-                font-weight: 600;
-            }
-            QLineEdit, QSpinBox {
-                padding: 10px 12px;
-                border: none;
-                border-radius: 8px;
-                background: rgba(30, 41, 59, 0.7);
-                color: #ffffff;
-                font-size: 13px;
-                font-weight: 400;
-                min-height: 16px;
-            }
-            QLineEdit:focus, QSpinBox:focus {
-                background: rgba(30, 41, 59, 0.9);
-                outline: 2px solid rgb(102, 126, 234);
-            }
-            QPushButton {
-                padding: 12px 24px;
-                border: none;
-                border-radius: 8px;
-                font-weight: 500;
-                font-size: 13px;
-                min-height: 16px;
-                font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
-            }
-            QPushButton[class="primary"] {
+                padding: 5px 10px;
                 background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
-                    stop:0 rgb(102, 126, 234), stop:1 rgb(118, 75, 162));
+                    stop:0 #F44336, stop:1 #D32F2F);
                 color: white;
+                border-radius: 6px;
                 font-weight: 600;
             }
-            QPushButton[class="primary"]:hover {
+            
+            QScrollArea {
+                border: none;
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+                    stop:0 rgba(30, 41, 59, 0.1), stop:1 rgba(244, 67, 54, 0.02));
+                border-radius: 8px;
+            }
+            
+            QScrollBar:vertical {
                 background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
-                    stop:0 rgb(112, 136, 244), stop:1 rgb(128, 85, 172));
-                transform: translateY(-1px);
+                    stop:0 rgba(30, 41, 59, 0.5), stop:1 rgba(244, 67, 54, 0.1));
+                width: 12px;
+                border-radius: 6px;
+                margin: 0;
             }
-            QPushButton[class="primary"]:pressed {
+            
+            QScrollBar::handle:vertical {
                 background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
-                    stop:0 rgb(92, 116, 224), stop:1 rgb(108, 65, 152));
-                transform: translateY(0px);
+                    stop:0 #F44336, stop:1 #D32F2F);
+                border-radius: 6px;
+                min-height: 20px;
             }
-            QPushButton[class="secondary"] {
-                background: rgba(45, 55, 72, 0.7);
-                color: rgba(203, 213, 225, 0.9);
-                border: 1px solid rgba(102, 126, 234, 0.3);
+            
+            QScrollBar::handle:vertical:hover {
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                    stop:0 #F55336, stop:1 #E33F2F);
             }
-            QPushButton[class="secondary"]:hover {
-                background: rgba(45, 55, 72, 0.9);
-                color: white;
-                border: 1px solid rgba(102, 126, 234, 0.6);
-                transform: translateY(-1px);
-            }
-            QPushButton[class="secondary"]:pressed {
-                background: rgba(35, 45, 62, 0.9);
-                transform: translateY(0px);
-            }
-            QPushButton[class="preset"] {
-                min-width: 80px;
-                min-height: 36px;
-                border-radius: 18px;
-                font-weight: 600;
-                font-size: 12px;
-                border: 2px solid transparent;
-            }
+            
             QCheckBox {
-                color: rgba(203, 213, 225, 0.9);
+                color: rgba(226, 232, 240, 0.9);
                 font-size: 13px;
                 font-weight: 400;
                 spacing: 8px;
             }
+            
             QCheckBox::indicator {
                 width: 18px;
                 height: 18px;
-                border: 2px solid rgba(102, 126, 234, 0.4);
                 border-radius: 4px;
-                background: rgba(30, 41, 59, 0.7);
+                border: 2px solid rgba(100, 116, 139, 0.3);
+                background: rgba(30, 41, 59, 0.4);
             }
+            
+            QCheckBox::indicator:hover {
+                border: 2px solid #F44336;
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+                    stop:0 rgba(244, 67, 54, 0.1), stop:1 rgba(211, 47, 47, 0.05));
+            }
+            
             QCheckBox::indicator:checked {
                 background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
-                    stop:0 rgb(102, 126, 234), stop:1 rgb(118, 75, 162));
-                border: 2px solid rgb(102, 126, 234);
+                    stop:0 #F44336, stop:1 #D32F2F);
+                border: 2px solid #F44336;
+                image: url(data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iMTIiIHZpZXdCb3g9IjAgMCAxMiAxMiIgZmlsbD0ibm9uZSI+CjxwYXRoIGQ9Ik0xMCAzTDQuNSA4LjVMMiA2IiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8L3N2Zz4K);
             }
-            QCheckBox::indicator:hover {
-                border: 2px solid rgba(102, 126, 234, 0.7);
-            }
-            QComboBox {
-                padding: 10px 12px;
-                border: none;
+            
+            QPushButton {
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+                    stop:0 rgba(45, 55, 72, 0.6), stop:1 rgba(244, 67, 54, 0.1));
+                color: rgba(226, 232, 240, 0.9);
+                border: 2px solid rgba(100, 116, 139, 0.2);
                 border-radius: 8px;
-                background: rgba(30, 41, 59, 0.7);
-                color: #ffffff;
+                padding: 10px 16px;
+                font-weight: 500;
                 font-size: 13px;
-                min-height: 16px;
+                min-width: 100px;
             }
-            QComboBox:focus {
-                background: rgba(30, 41, 59, 0.9);
-                outline: 2px solid rgb(102, 126, 234);
+            
+            QPushButton:hover {
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                    stop:0 #F55336, stop:1 #E33F2F);
+                border: 2px solid #F44336;
+                color: white;
             }
-            QComboBox::drop-down {
-                border: none;
-                width: 20px;
+            
+            QPushButton[class="primary"] {
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                    stop:0 #F44336, stop:1 #D32F2F);
+                color: white;
+                border: 2px solid #F44336;
+                font-weight: 600;
             }
-            QComboBox::down-arrow {
-                width: 12px;
-                height: 12px;
-                image: none;
-                border: none;
+            
+            QPushButton[class="primary"]:hover {
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                    stop:0 #F55336, stop:1 #E33F2F);
+                border: 2px solid #F55336;
             }
+            
+            QSpinBox, QSlider {
+                background: rgba(30, 41, 59, 0.4);
+                border: 2px solid rgba(100, 116, 139, 0.3);
+                border-radius: 6px;
+                padding: 6px 10px;
+                color: rgba(226, 232, 240, 0.9);
+                font-size: 13px;
+            }
+            
+            QSpinBox:focus, QSlider:focus {
+                border: 2px solid #F44336;
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+                    stop:0 rgba(244, 67, 54, 0.1), stop:1 rgba(30, 41, 59, 0.4));
+            }
+            
             QSlider::groove:horizontal {
-                border: none;
-                height: 8px;
-                background: rgba(30, 41, 59, 0.7);
-                border-radius: 4px;
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                    stop:0 rgba(30, 41, 59, 0.6), stop:1 rgba(244, 67, 54, 0.2));
+                height: 6px;
+                border-radius: 3px;
             }
+            
             QSlider::handle:horizontal {
                 background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
-                    stop:0 rgb(102, 126, 234), stop:1 rgb(118, 75, 162));
-                border: none;
-                width: 20px;
+                    stop:0 #F44336, stop:1 #D32F2F);
+                border: 2px solid #F44336;
+                width: 18px;
                 margin: -6px 0;
-                border-radius: 10px;
+                border-radius: 9px;
             }
+            
             QSlider::handle:horizontal:hover {
                 background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
-                    stop:0 rgb(112, 136, 244), stop:1 rgb(128, 85, 172));
+                    stop:0 #F55336, stop:1 #E33F2F);
+                border: 2px solid #F55336;
             }
-            QSlider::sub-page:horizontal {
-                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
-                    stop:0 rgb(102, 126, 234), stop:1 rgb(118, 75, 162));
-                border-radius: 4px;
-            }
+            
             QLabel {
                 color: rgba(203, 213, 225, 0.9);
                 font-size: 13px;
-                font-weight: 400;
-            }        """)
+            }
+        """)
         
         main_layout = QVBoxLayout(self)
         main_layout.setContentsMargins(30, 30, 30, 30)
@@ -237,12 +265,20 @@ class SettingsDialog(QDialog):
         self.create_buttons(main_layout)
         
     def create_header(self, parent_layout):
-        """Create dialog header"""
+        """Create dialog header with gradient styling"""
         header_layout = QVBoxLayout()
         
         title_label = QLabel("⚙️ Settings")
         title_label.setFont(QFont("Inter", 24, QFont.Bold))
-        title_label.setStyleSheet("color: rgb(102, 126, 234); margin-bottom: 8px; font-weight: 700;")
+        title_label.setStyleSheet("""
+            color: transparent;
+            background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                stop:0 #F44336, stop:1 #D32F2F);
+            -webkit-background-clip: text;
+            background-clip: text;
+            margin-bottom: 8px; 
+            font-weight: 700;
+        """)
         
         subtitle_label = QLabel("Customize your Custom Server File Manager Client")
         subtitle_label.setFont(QFont("Inter", 12, QFont.Normal))
@@ -253,10 +289,17 @@ class SettingsDialog(QDialog):
         
         parent_layout.addLayout(header_layout)
         
-        # Separator
+        # Enhanced gradient separator
         separator = QFrame()
         separator.setFrameShape(QFrame.HLine)
-        separator.setStyleSheet("background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 rgb(102, 126, 234), stop:1 rgb(118, 75, 162)); max-height: 2px; border: none; margin: 15px 0;")
+        separator.setStyleSheet("""
+            background: qlineargradient(x1:0, y1:0, x2:1, y2:0, 
+                stop:0 #F44336, stop:0.5 #D32F2F, stop:1 #F44336); 
+            max-height: 3px; 
+            border: none; 
+            border-radius: 2px;
+            margin: 15px 0;
+        """)
         parent_layout.addWidget(separator)
     
     def create_tabs(self, parent_layout):
@@ -268,11 +311,13 @@ class SettingsDialog(QDialog):
         
         # Upload tab
         self.create_upload_tab()
-          # Theme tab
+        
+        # Theme tab
         self.create_theme_tab()
         
         # Advanced tab
         self.create_advanced_tab()
+        
         parent_layout.addWidget(self.tab_widget)
     
     def create_general_tab(self):
@@ -293,7 +338,8 @@ class SettingsDialog(QDialog):
         scroll_layout = QVBoxLayout(scroll_content)
         scroll_layout.setContentsMargins(20, 20, 20, 20)
         scroll_layout.setSpacing(20)
-          # Auto Upload Group
+        
+        # Auto Upload Group
         auto_upload_group = QGroupBox("📤 Auto Upload Settings")
         auto_upload_layout = QVBoxLayout(auto_upload_group)
         auto_upload_layout.setSpacing(10)
@@ -337,7 +383,8 @@ class SettingsDialog(QDialog):
         upload_widget = QWidget()
         upload_layout = QVBoxLayout(upload_widget)
         upload_layout.setContentsMargins(0, 0, 0, 0)
-          # Create scroll area
+        
+        # Create scroll area
         scroll_area = QScrollArea()
         scroll_area.setWidgetResizable(True)
         scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
@@ -408,7 +455,7 @@ class SettingsDialog(QDialog):
         self.tab_widget.addTab(upload_widget, "📤 Upload")
     
     def create_theme_tab(self):
-        """Create theme settings tab with scroll area"""
+        """Create simplified theme settings tab - Red Theme Default"""
         theme_widget = QWidget()
         theme_layout = QVBoxLayout(theme_widget)
         theme_layout.setContentsMargins(0, 0, 0, 0)
@@ -425,77 +472,45 @@ class SettingsDialog(QDialog):
         scroll_layout = QVBoxLayout(scroll_content)
         scroll_layout.setContentsMargins(20, 20, 20, 20)
         scroll_layout.setSpacing(20)
-          # Color Presets Group
-        presets_group = QGroupBox("🎨 Color Presets")
-        presets_layout = QGridLayout(presets_group)
-        presets_layout.setSpacing(15)
         
-        # Enhanced preset buttons with more color options
-        color_presets = [
-            ("🟣 Purple", "rgb(102, 126, 234)", 0, 0),
-            ("🔵 Blue", "#2196F3", 0, 1),
-            ("🟢 Green", "#4CAF50", 0, 2),
-            ("🟠 Orange", "#FF9800", 1, 0),
-            ("🔴 Red", "#F44336", 1, 1),
-            ("🟡 Yellow", "#FFC107", 1, 2),
-            ("🟤 Brown", "#795548", 2, 0),
-            ("🔵 Cyan", "#00BCD4", 2, 1),
-            ("🟢 Lime", "#8BC34A", 2, 2),
-            ("🟣 Indigo", "#3F51B5", 3, 0),
-            ("🌸 Pink", "#E91E63", 3, 1),
-            ("🌊 Teal", "#009688", 3, 2)
-        ]
+        # Theme Info Group with enhanced gradient
+        theme_info_group = QGroupBox("🎨 Current Theme")
+        theme_info_layout = QVBoxLayout(theme_info_group)
+        theme_info_layout.setSpacing(15)
         
-        for text, color, row, col in color_presets:
-            self.create_preset_button(text, color, row, col, presets_layout)
+        # Show current theme as red with enhanced gradient
+        current_theme_label = QLabel("🔴 Red Theme (Default)")
+        current_theme_label.setStyleSheet("""
+            QLabel {
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                    stop:0 #F44336, stop:0.3 #E53935, stop:0.7 #D32F2F, stop:1 #F44336);
+                color: white;
+                padding: 18px;
+                border-radius: 12px;
+                font-weight: 700;
+                font-size: 16px;
+                text-align: center;
+                border: 2px solid rgba(244, 67, 54, 0.3);
+            }
+        """)
+        current_theme_label.setAlignment(Qt.AlignCenter)
         
-        # Custom Colors Group with enhanced color picker
-        custom_group = QGroupBox("🎯 Custom Colors & Advanced Theming")
-        custom_layout = QFormLayout(custom_group)
-        custom_layout.setSpacing(15)
+        theme_description = QLabel("The application uses a beautiful red gradient theme with modern design elements and enhanced visual effects.")
+        theme_description.setStyleSheet("""
+            color: rgba(203, 213, 225, 0.8); 
+            font-size: 13px; 
+            padding: 10px;
+            background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+                stop:0 rgba(244, 67, 54, 0.05), stop:1 rgba(30, 41, 59, 0.1));
+            border-radius: 8px;
+        """)
+        theme_description.setWordWrap(True)
         
-        # Primary color section
-        primary_layout = QHBoxLayout()
-        self.primary_color_button = QPushButton("Choose Primary Color")
-        self.primary_color_button.setProperty("class", "secondary")
-        self.primary_color_button.clicked.connect(self.choose_primary_color)
-        
-        self.primary_color_preview = QLabel("●")
-        self.primary_color_preview.setStyleSheet("color: rgb(102, 126, 234); font-size: 24px;")
-        
-        primary_layout.addWidget(self.primary_color_button)
-        primary_layout.addWidget(self.primary_color_preview)
-        primary_layout.addStretch()
-        
-        # Accent color section
-        accent_layout = QHBoxLayout()
-        self.accent_color_button = QPushButton("Choose Accent Color")
-        self.accent_color_button.setProperty("class", "secondary")
-        self.accent_color_button.clicked.connect(self.choose_accent_color)
-        
-        self.accent_color_preview = QLabel("●")
-        self.accent_color_preview.setStyleSheet("color: rgb(118, 75, 162); font-size: 24px;")
-        
-        accent_layout.addWidget(self.accent_color_button)
-        accent_layout.addWidget(self.accent_color_preview)
-        accent_layout.addStretch()
-        
-        # Background theme selector
-        self.background_combo = QComboBox()
-        self.background_combo.addItems([
-            "🌌 Dark Gradient (Default)",
-            "🌃 Solid Dark",
-            "🌆 Dark Blue",
-            "🌍 Dark Green",
-            "🌸 Dark Purple",        "🔥 Dark Red"
-        ])
-        
-        custom_layout.addRow("Primary Color:", primary_layout)
-        custom_layout.addRow("Accent Color:", accent_layout)
-        custom_layout.addRow("Background Theme:", self.background_combo)
+        theme_info_layout.addWidget(current_theme_label)
+        theme_info_layout.addWidget(theme_description)
         
         # Interface Group
-        interface_group = QGroupBox("🖥️ Interface")
+        interface_group = QGroupBox("🖥️ Interface Settings")
         interface_layout = QFormLayout(interface_group)
         interface_layout.setSpacing(15)
         
@@ -514,8 +529,7 @@ class SettingsDialog(QDialog):
         interface_layout.addRow("Window opacity:", self.opacity_slider)
         interface_layout.addRow("", self.opacity_label)
         
-        scroll_layout.addWidget(presets_group)
-        scroll_layout.addWidget(custom_group)
+        scroll_layout.addWidget(theme_info_group)
         scroll_layout.addWidget(interface_group)
         scroll_layout.addStretch()
         scroll_area.setWidget(scroll_content)
@@ -582,7 +596,8 @@ class SettingsDialog(QDialog):
         monitoring_layout.addRow("Scan interval:", self.scan_interval_spinbox)
         monitoring_layout.addRow("", self.ignore_hidden_checkbox)
         monitoring_layout.addRow("", self.ignore_temp_checkbox)
-          # Debug Group
+        
+        # Debug Group
         debug_group = QGroupBox("🐛 Debug Settings")
         debug_layout = QVBoxLayout(debug_group)
         debug_layout.setSpacing(10)
@@ -590,6 +605,7 @@ class SettingsDialog(QDialog):
         self.verbose_logging_checkbox = QCheckBox("Enable verbose logging")
         self.debug_mode_checkbox = QCheckBox("Enable debug mode")
         self.save_logs_checkbox = QCheckBox("Save logs to file")
+        
         debug_layout.addWidget(self.verbose_logging_checkbox)
         debug_layout.addWidget(self.debug_mode_checkbox)
         debug_layout.addWidget(self.save_logs_checkbox)
@@ -602,31 +618,8 @@ class SettingsDialog(QDialog):
         advanced_layout.addWidget(scroll_area)
         self.tab_widget.addTab(advanced_widget, "🔧 Advanced")
     
-    def create_preset_button(self, text, color, row, col, layout):
-        """Create a color preset button"""
-        button = QPushButton(text)
-        button.setProperty("class", "preset")
-        button.setStyleSheet(f"""
-            QPushButton[class="preset"] {{
-                background: {color};
-                color: white;
-                border: none;
-                font-weight: 600;
-                transition: all 0.2s ease;
-            }}
-            QPushButton[class="preset"]:hover {{
-                background: {color};
-                transform: translateY(-2px);
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);            }}
-            QPushButton[class="preset"]:pressed {{
-                transform: translateY(0px);
-            }}
-        """)
-        button.clicked.connect(lambda: self.apply_color_preset(color))
-        layout.addWidget(button, row, col)
-    
     def create_buttons(self, parent_layout):
-        """Create dialog buttons"""
+        """Create dialog buttons with enhanced gradient styling"""
         button_layout = QHBoxLayout()
         
         # Reset button
@@ -652,41 +645,6 @@ class SettingsDialog(QDialog):
         button_layout.addWidget(save_button)
         parent_layout.addLayout(button_layout)
     
-    def apply_color_preset(self, color):
-        """Apply a color preset"""
-        # This would update the application theme
-        if self.parent_window:
-            # Apply theme to parent window
-            pass
-    
-    def choose_primary_color(self):
-        """Choose custom primary color with enhanced color picker"""
-        current_color = QColor("rgb(102, 126, 234)")
-        color = QColorDialog.getColor(current_color, self, "Choose Primary Color")
-        if color.isValid():
-            self.primary_color_button.setText(f"Primary: {color.name()}")
-            self.primary_color_preview.setStyleSheet(f"color: {color.name()}; font-size: 24px;")
-            # Optionally apply color immediately for preview
-            if self.parent_window:
-                self.apply_color_live(color, 'primary')
-    
-    def choose_accent_color(self):
-        """Choose custom accent color with enhanced color picker"""
-        current_color = QColor("rgb(118, 75, 162)")
-        color = QColorDialog.getColor(current_color, self, "Choose Accent Color")
-        if color.isValid():
-            self.accent_color_button.setText(f"Accent: {color.name()}")
-            self.accent_color_preview.setStyleSheet(f"color: {color.name()}; font-size: 24px;")
-            # Optionally apply color immediately for preview
-            if self.parent_window:
-                self.apply_color_live(color, 'accent')
-    
-    def apply_color_live(self, color, color_type):
-        """Apply color changes live for preview"""
-        # This could update the parent window's theme in real-time
-        # Implementation would depend on how the main window handles theme updates
-        pass
-    
     def reset_to_defaults(self):
         """Reset all settings to defaults"""
         reply = QMessageBox.question(
@@ -699,6 +657,7 @@ class SettingsDialog(QDialog):
         
         if reply == QMessageBox.Yes:
             self.load_default_settings()
+            self.mark_settings_dirty()
     
     def load_default_settings(self):
         """Load default settings"""
@@ -736,17 +695,79 @@ class SettingsDialog(QDialog):
         self.save_logs_checkbox.setChecked(False)
     
     def load_settings(self):
-        """Load settings from file"""
+        """Load settings from file with enhanced error handling"""
         try:
-            config_file = Path.home() / ".custom_server_client" / "settings.json"
-            if config_file.exists():
-                with open(config_file, 'r') as f:
+            if self.settings_file.exists():
+                with open(self.settings_file, 'r', encoding='utf-8') as f:
                     settings = json.load(f)
-                    self.apply_settings(settings)
+                    
+                # Check if settings format needs migration
+                if settings.get('version', '1.0') < '2.0':
+                    print("📦 Migrating settings to new format...")
+                    self.migrate_settings(settings)
+                
+                self.apply_settings(settings)
+                print(f"✅ Settings loaded from {self.settings_file}")
+                
+                # Load theme gradients if available
+                if 'theme_settings' in settings:
+                    self.apply_gradient_theme(settings['theme_settings'])
+                    
             else:
+                print("📝 No settings file found, loading defaults...")
                 self.load_default_settings()
-        except Exception:
+                # Save defaults to create initial file
+                self.save_settings_internal(silent=True)
+                
+        except json.JSONDecodeError as e:
+            print(f"⚠️ Settings file corrupted: {e}")
+            self.restore_from_backup()
+        except Exception as e:
+            print(f"⚠️ Failed to load settings: {e}")
             self.load_default_settings()
+    
+    def migrate_settings(self, settings):
+        """Migrate old settings format to new format"""
+        # Add migration logic for future versions
+        settings['version'] = '2.0'
+        print("✅ Settings migration completed")
+    
+    def restore_from_backup(self):
+        """Restore settings from the most recent backup"""
+        try:
+            if not self.backup_dir.exists():
+                self.load_default_settings()
+                return
+                
+            backups = sorted(self.backup_dir.glob("settings_backup_*.json"))
+            if not backups:
+                self.load_default_settings()
+                return
+                
+            latest_backup = backups[-1]
+            with open(latest_backup, 'r', encoding='utf-8') as f:
+                settings = json.load(f)
+                self.apply_settings(settings)
+                
+            print(f"✅ Settings restored from backup: {latest_backup.name}")
+            
+            # Copy backup to main settings file
+            shutil.copy2(latest_backup, self.settings_file)
+            
+        except Exception as e:
+            print(f"⚠️ Failed to restore from backup: {e}")
+            self.load_default_settings()
+    
+    def apply_gradient_theme(self, theme_settings):
+        """Apply gradient theme settings to the interface"""
+        if self.parent_window:
+            try:
+                # Apply gradients to parent window if it has the method
+                if hasattr(self.parent_window, 'apply_gradient_theme'):
+                    self.parent_window.apply_gradient_theme(theme_settings)
+                print("✅ Gradient theme applied")
+            except Exception as e:
+                print(f"⚠️ Failed to apply gradient theme: {e}")
     
     def apply_settings(self, settings):
         """Apply loaded settings to UI"""
@@ -807,6 +828,8 @@ class SettingsDialog(QDialog):
             # Theme
             'font_size': self.font_size_spinbox.value(),
             'window_opacity': self.opacity_slider.value(),
+            'primary_color': self.current_primary_color,
+            'accent_color': self.current_accent_color,
             
             # Advanced
             'connection_timeout': self.timeout_spinbox.value(),
@@ -821,25 +844,272 @@ class SettingsDialog(QDialog):
         }
     
     def save_settings(self):
-        """Save settings to file"""
+        """Save settings to file using enhanced method"""
+        success = self.save_settings_internal(silent=False)
+        if success:
+            self.settings_dirty = False
+        return success
+    
+    def save_and_close(self):
+        """Save settings and close dialog with enhanced feedback"""
+        if self.save_settings():
+            # Show success message briefly
+            if hasattr(self, 'parent_window') and self.parent_window:
+                try:
+                    # Try to show success in parent window status bar
+                    if hasattr(self.parent_window, 'show_status_message'):
+                        self.parent_window.show_status_message("💾 Settings saved successfully!", 3000)
+                    elif hasattr(self.parent_window, 'statusBar'):
+                        self.parent_window.statusBar().showMessage("💾 Settings saved successfully!", 3000)
+                except Exception:
+                    pass
+            
+            # Emit settings changed signal
+            self.settings_changed.emit()
+            
+            # Close dialog
+            self.accept()
+        else:
+            # Save failed, show error and keep dialog open
+            QMessageBox.critical(self, "Save Failed", 
+                               "Failed to save settings. Please check file permissions and try again.")
+        
+        # Reset dirty flag regardless
+        self.settings_dirty = False
+    
+    def setup_auto_save(self):
+        """Setup auto-save functionality for settings"""
+        # Connect all widgets to mark settings as dirty
+        self.connect_settings_changed()
+    
+    def connect_settings_changed(self):
+        """Connect all settings widgets to mark settings as dirty when changed"""
+        # General tab
+        self.auto_upload_checkbox.toggled.connect(self.mark_settings_dirty)
+        self.auto_clipboard_checkbox.toggled.connect(self.mark_settings_dirty)
+        self.auto_notifications_checkbox.toggled.connect(self.mark_settings_dirty)
+        self.auto_connect_checkbox.toggled.connect(self.mark_settings_dirty)
+        self.minimize_to_tray_checkbox.toggled.connect(self.mark_settings_dirty)
+        self.start_monitoring_checkbox.toggled.connect(self.mark_settings_dirty)
+        
+        # Upload tab
+        self.auto_resize_checkbox.toggled.connect(self.mark_settings_dirty)
+        self.max_resolution_spinbox.valueChanged.connect(self.mark_settings_dirty)
+        self.quality_slider.valueChanged.connect(self.mark_settings_dirty)
+        self.images_checkbox.toggled.connect(self.mark_settings_dirty)
+        self.videos_checkbox.toggled.connect(self.mark_settings_dirty)
+        self.audio_checkbox.toggled.connect(self.mark_settings_dirty)
+        self.documents_checkbox.toggled.connect(self.mark_settings_dirty)
+        self.archives_checkbox.toggled.connect(self.mark_settings_dirty)
+        
+        # Theme tab
+        self.font_size_spinbox.valueChanged.connect(self.mark_settings_dirty)
+        self.opacity_slider.valueChanged.connect(self.mark_settings_dirty)
+        
+        # Advanced tab
+        self.timeout_spinbox.valueChanged.connect(self.mark_settings_dirty)
+        self.retry_attempts_spinbox.valueChanged.connect(self.mark_settings_dirty)
+        self.concurrent_uploads_spinbox.valueChanged.connect(self.mark_settings_dirty)
+        self.scan_interval_spinbox.valueChanged.connect(self.mark_settings_dirty)
+        self.ignore_hidden_checkbox.toggled.connect(self.mark_settings_dirty)
+        self.ignore_temp_checkbox.toggled.connect(self.mark_settings_dirty)
+        self.verbose_logging_checkbox.toggled.connect(self.mark_settings_dirty)
+        self.debug_mode_checkbox.toggled.connect(self.mark_settings_dirty)
+        self.save_logs_checkbox.toggled.connect(self.mark_settings_dirty)
+    
+    def mark_settings_dirty(self):
+        """Mark settings as needing save"""
+        self.settings_dirty = True
+        if hasattr(self, 'auto_save_enabled') and self.auto_save_enabled:
+            # Auto-save after 2 seconds of inactivity
+            if hasattr(self, 'auto_save_timer'):
+                self.auto_save_timer.stop()
+            
+            self.auto_save_timer = QTimer()
+            self.auto_save_timer.timeout.connect(self.auto_save_settings)
+            self.auto_save_timer.setSingleShot(True)
+            self.auto_save_timer.start(2000)  # 2 seconds delay
+    
+    def auto_save_settings(self):
+        """Auto-save settings without user interaction"""
+        if self.settings_dirty:
+            self.save_settings_internal(silent=True)
+            self.settings_dirty = False
+    
+    def create_backup(self):
+        """Create a backup of current settings"""
         try:
+            if not self.settings_file.exists():
+                return True
+                
+            # Create backup directory
+            self.backup_dir.mkdir(parents=True, exist_ok=True)
+            
+            # Create timestamped backup
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            backup_file = self.backup_dir / f"settings_backup_{timestamp}.json"
+            
+            # Copy current settings to backup
+            shutil.copy2(self.settings_file, backup_file)
+            
+            # Keep only last 10 backups
+            backups = sorted(self.backup_dir.glob("settings_backup_*.json"))
+            if len(backups) > 10:
+                for old_backup in backups[:-10]:
+                    old_backup.unlink()
+            
+            return True
+        except Exception as e:
+            print(f"Warning: Failed to create backup: {e}")
+            return False
+    
+    def save_settings_internal(self, silent=False):
+        """Enhanced internal save method with backup and validation"""
+        try:
+            # Create backup before saving
+            self.create_backup()
+            
+            # Ensure config directory exists
             config_dir = Path.home() / ".custom_server_client"
             config_dir.mkdir(exist_ok=True)
             
-            settings_file = config_dir / "settings.json"
-            settings = self.get_settings()
+            # Get current settings
+            settings = self.get_comprehensive_settings()
             
-            with open(settings_file, 'w') as f:
-                json.dump(settings, f, indent=2)
-                
+            # Validate settings before saving
+            if not self.validate_settings(settings):
+                if not silent:
+                    QMessageBox.warning(self, "Validation Error", 
+                                      "Some settings have invalid values. Please check your configuration.")
+                return False
+            
+            # Write to temporary file first, then rename (atomic operation)
+            temp_file = self.settings_file.with_suffix('.tmp')
+            with open(temp_file, 'w', encoding='utf-8') as f:
+                json.dump(settings, f, indent=2, ensure_ascii=False)
+            
+            # Atomic rename
+            temp_file.replace(self.settings_file)
+            
+            if not silent:
+                print(f"✅ Settings saved successfully to {self.settings_file}")
+            
             return True
+            
         except Exception as e:
-            QMessageBox.warning(self, "Save Error", f"Failed to save settings: {str(e)}")
+            if not silent:
+                QMessageBox.critical(self, "Save Error", 
+                                   f"Failed to save settings: {str(e)}")
+            print(f"❌ Failed to save settings: {e}")
             return False
     
-    def save_and_close(self):
-        """Save settings and close dialog"""
-        if self.save_settings():
-            self.settings_changed.emit()
-            self.accept()
-        # If save failed, dialog stays open
+    def validate_settings(self, settings):
+        """Validate settings before saving"""
+        try:
+            # Validate numeric ranges
+            if not (512 <= settings.get('max_resolution', 2048) <= 4096):
+                return False
+            if not (50 <= settings.get('jpeg_quality', 85) <= 100):
+                return False
+            if not (8 <= settings.get('font_size', 12) <= 18):
+                return False
+            if not (80 <= settings.get('window_opacity', 100) <= 100):
+                return False
+            if not (5 <= settings.get('connection_timeout', 30) <= 120):
+                return False
+            if not (1 <= settings.get('retry_attempts', 3) <= 10):
+                return False
+            if not (1 <= settings.get('concurrent_uploads', 3) <= 10):
+                return False
+            if not (1 <= settings.get('scan_interval', 5) <= 60):
+                return False
+            
+            # Validate colors
+            primary_color = settings.get('primary_color', 'rgb(244, 67, 54)')
+            accent_color = settings.get('accent_color', 'rgb(211, 47, 47)')
+            
+            if not (primary_color.startswith('rgb(') or primary_color.startswith('#')):
+                return False
+            if not (accent_color.startswith('rgb(') or accent_color.startswith('#')):
+                return False
+            
+            return True
+            
+        except Exception:
+            return False
+    
+    def get_comprehensive_settings(self):
+        """Get comprehensive settings including metadata"""
+        base_settings = self.get_settings()
+        
+        # Add metadata
+        base_settings.update({
+            # Metadata
+            'version': '2.0',
+            'saved_at': datetime.now().isoformat(),
+            'theme_version': 'red_gradient_v2',
+            'client_version': '1.0.0',
+            
+            # System info for debugging
+            'system_info': {
+                'platform': os.name,
+                'python_version': f"{os.sys.version_info.major}.{os.sys.version_info.minor}",
+                'settings_format': 'comprehensive_v2'
+            },
+            
+            # Enhanced theme settings with gradients
+            'theme_settings': {
+                'primary_gradient': 'qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #F44336, stop:0.3 #E53935, stop:0.7 #D32F2F, stop:1 #F44336)',
+                'secondary_gradient': 'qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 rgba(45, 55, 72, 0.7), stop:1 rgba(244, 67, 54, 0.1))',
+                'hover_gradient': 'qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #F55336, stop:1 #E33F2F)',
+                'focus_gradient': 'qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 rgba(30, 41, 59, 0.9), stop:1 rgba(244, 67, 54, 0.1))',
+                'background_gradient': 'qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 rgb(15, 15, 35), stop:0.3 rgb(20, 20, 40), stop:0.7 rgb(22, 22, 42), stop:1 rgb(26, 26, 46))'
+            },
+            
+            # Advanced configuration
+            'advanced_config': {
+                'auto_save_enabled': getattr(self, 'auto_save_enabled', True),
+                'backup_enabled': True,
+                'gradient_animations': True,
+                'enhanced_ui': True,
+                'red_theme_fixed': True
+            }
+        })
+        
+        return base_settings
+    
+    def closeEvent(self, event):
+        """Handle dialog close event - warn about unsaved changes"""
+        if self.settings_dirty:
+            reply = QMessageBox.question(
+                self,
+                "Unsaved Changes",
+                "You have unsaved changes. Do you want to save them before closing?",
+                QMessageBox.Save | QMessageBox.Discard | QMessageBox.Cancel,
+                QMessageBox.Save
+            )
+            
+            if reply == QMessageBox.Save:
+                if self.save_settings():
+                    event.accept()
+                else:
+                    event.ignore()
+            elif reply == QMessageBox.Discard:
+                event.accept()
+            else:
+                event.ignore()
+        else:
+            event.accept()
+    
+    def apply_theme_color(self, color, color_type='primary'):
+        """Apply theme color to parent window with gradient support"""
+        if self.parent_window and hasattr(self.parent_window, 'apply_modern_theme'):
+            try:
+                # Apply red gradient theme
+                if color_type == 'primary':
+                    self.parent_window.apply_modern_theme(QColor(244, 67, 54))  # Red
+                else:
+                    self.parent_window.apply_modern_theme(QColor(211, 47, 47))  # Dark red
+                print(f"✅ Applied {color_type} red gradient theme to parent window")
+            except Exception as e:
+                print(f"⚠️ Failed to apply theme color: {e}")

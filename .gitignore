@@ -1,11 +1,77 @@
-Secret
-.venv
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
 
-__pycache__
+# Virtual environments
 .env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
 
-multi-file-manager
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
 
-uploads
-backup
-backup_before_improvement
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Project specific
+*.log
+*.tmp
+Secret
+
+# Server uploads and data
+uploads/
+server/uploads/
+server/file_manager.db
+server/cache/
+backup/
+backup_before_improvement/
+multi-file-manager/
+
+# Client build artifacts (keep dist/ for releases)
+client/build/
+
+# Archive folder (development artifacts)  
+archive/
+
+# Test files and development scripts
+*test*.py
+debug_*.py
+comprehensive_*.py
+
+# Temporary files
+*.bak
+*.backup
+temp/
+tmp/
