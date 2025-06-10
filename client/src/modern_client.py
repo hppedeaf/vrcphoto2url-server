@@ -137,8 +137,7 @@ class UploadWorker(QThread):
                 # Try to upload the file
                 result = self.server_manager.upload_file(filepath)
                 
-                # Check if upload was successful
-                if result and 'url' in result:
+                # Check if upload was successful                if result and 'url' in result:
                     self.upload_progress.emit(f"Completed {filename}", 100)
                     self.upload_complete.emit(filename, "Custom Server", result['url'], file_size)
                 else:
@@ -148,7 +147,10 @@ class UploadWorker(QThread):
                 
             except Exception as e:
                 # Import ServerError to handle server-specific errors
-                from server_client import ServerError
+                try:
+                    from .server_client import ServerError
+                except ImportError:
+                    from server_client import ServerError
                 
                 if upload_item:
                     filename = upload_item['filename']
@@ -364,12 +366,14 @@ class ModernCustomClient(QMainWindow):
                 font-size: 13px;
                 line-height: 1.5;            }}
         """)
-    
-    def apply_saved_theme_colors(self, primary_color=None, accent_color=None):
+      def apply_saved_theme_colors(self, primary_color=None, accent_color=None):
         """Apply saved theme colors to the application"""
         if primary_color or accent_color:
             try:
-                from .ui_components import apply_custom_theme
+                try:
+                    from .ui_components import apply_custom_theme
+                except ImportError:
+                    from ui_components import apply_custom_theme
                 apply_custom_theme(self, primary_color=primary_color or "#667eea", accent_color=accent_color or "#764ba2")
                 self.log_activity(f"🎨 Applied saved theme colors: Primary={primary_color}, Accent={accent_color}")
             except Exception as e:
@@ -891,10 +895,12 @@ class ModernCustomClient(QMainWindow):
         
         self.log_activity("🔌 Disconnected from server")
         self.statusBar().showMessage("Disconnected")
-    
-    def show_connection_dialog(self):
+      def show_connection_dialog(self):
         """Show connection configuration dialog"""
-        from connection_dialog import ConnectionDialog
+        try:
+            from .connection_dialog import ConnectionDialog
+        except ImportError:
+            from connection_dialog import ConnectionDialog
         
         dialog = ConnectionDialog(self)
         if dialog.exec() == QDialog.Accepted:

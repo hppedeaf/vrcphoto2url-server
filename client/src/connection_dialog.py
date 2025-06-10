@@ -13,7 +13,11 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt, QThread, Signal
 from PySide6.QtGui import QFont, QPixmap
 
-from .server_client import ServerManager, ServerError
+try:
+    from .server_client import ServerManager, ServerError
+except ImportError:
+    # Handle both relative and absolute imports
+    from server_client import ServerManager, ServerError
 
 class ConnectionTestWorker(QThread):
     """Worker thread for testing connection"""
